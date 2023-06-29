@@ -16,7 +16,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'https://port-0-server-dihik2mlirmt22y.sel4.cloudtype.app/',
+    'http://127.0.0.1:8000',
+]
 
 
 # Application definition
