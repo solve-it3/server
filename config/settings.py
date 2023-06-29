@@ -18,7 +18,6 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
     'port-0-server-dihik2mlirmt22y.sel4.cloudtype.app'
-    '127.0.0.1',
 ]
 
 
