@@ -1,4 +1,3 @@
-from .local_settings import *
 import os
 from dotenv import load_dotenv
 from pathlib import Path
