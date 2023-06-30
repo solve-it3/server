@@ -1,3 +1,4 @@
+from .local_settings import *
 import os
 from dotenv import load_dotenv
 from pathlib import Path
@@ -139,3 +140,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 로컬 세팅 추가
+try:
+    from .local_settings import *
+except ImportError:
+    pass
