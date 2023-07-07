@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     # DRF
     'rest_framework',
 
-    # CCORS
+    # CORS
     'corsheaders',
 ]
 
