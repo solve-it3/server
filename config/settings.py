@@ -38,6 +38,11 @@ INSTALLED_APPS = [
 
     # DRF
     'rest_framework',
+    'rest_framework.authtoken',
+
+    # dj-rest-auth
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 
     # CORS
     'corsheaders',
