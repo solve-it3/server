@@ -3,13 +3,12 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, backjoon_id, github_id, password=None, **extra_fields):
-        if not backjoon_id:
-            raise ValueError('The given backjoon_id must be set')
-        if not github_id:
-            raise ValueError('The given github_id must be set')
+    def create_user(self, kakao_id, password=None, backjoon_id=None, github_id=None, **extra_fields):
+        if not kakao_id:
+            raise ValueError('The given kakao_id must be set')
 
         user = self.model(
+            kakao_id=kakao_id,
             backjoon_id=backjoon_id,
             github_id=github_id,
             **extra_fields
@@ -18,7 +17,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, backjoon_id, github_id, password=None, **extra_fields):
+    def create_superuser(self, kakao_id, backjoon_id=None, github_id=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -27,12 +26,13 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(backjoon_id, github_id, password, **extra_fields)
+        return self.create_user(kakao_id, backjoon_id, github_id, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    backjoon_id = models.CharField(max_length=255, unique=True)
-    github_id = models.CharField(max_length=255, unique=True)
+    kakao_id = models.CharField(max_length=255, unique=True)
+    backjoon_id = models.CharField(max_length=255, null=True, blank=True)
+    github_id = models.CharField(max_length=255, null=True, blank=True)
     profile_image = models.URLField(blank=True, null=True, default="")
     company = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -40,8 +40,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'backjoon_id'
-    REQUIRED_FIELDS = ['github_id']
+    USERNAME_FIELD = 'kakao_id'
+    REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.backjoon_id
+        return self.kakao_id
