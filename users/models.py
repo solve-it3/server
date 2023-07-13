@@ -35,6 +35,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     github_id = models.CharField(max_length=255, null=True, blank=True)
     profile_image = models.URLField(blank=True, null=True, default="")
     company = models.CharField(max_length=255, blank=True, null=True)
+    following = models.ManyToManyField(
+        'self', symmetrical=False, related_name='followers')
+    is_open = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -45,3 +48,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.kakao_id
+
+    def follow(self, user):
+        self.following.add(user)
+
+    def unfollow(self, user):
+        self.following.remove(user)
+
+    def is_following(self, user):
+        return self.following.filter(id=user.id).exists()
+
+    def is_followed_by(self, user):
+        return self.followers.filter(id=user.id).exists()
