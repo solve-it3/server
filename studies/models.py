@@ -8,7 +8,7 @@ class Study(models.Model):
     # leader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='study_leader', verbose_name="리더")
     language = models.CharField(max_length=50, null=True, default=None)
     default_problem_number = models.IntegerField(null=True, default=None)
-    #start_date = models.DateField ( auto_now = False , auto_now_add = False, null = True)
+    start_date = models.DateField ( auto_now = False , auto_now_add = False)
     grade = (('D', '대류권'),('S', '성층권'),('J', '중간권'), ('Y', '열권'), ('O', '외기권')) 
     study_grade = models.CharField(max_length=2, choices=grade)
     is_open = models.BooleanField()
