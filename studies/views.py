@@ -27,3 +27,8 @@ class StudyNameDuplicatedView(generics.RetrieveAPIView):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+class CreateStudyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Study.objects.all()
+    serializer_class = CreateStudySerializer
+    

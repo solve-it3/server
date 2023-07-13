@@ -12,6 +12,8 @@ class Study(models.Model):
     grade = (('D', '대류권'),('S', '성층권'),('J', '중간권'), ('Y', '열권'), ('O', '외기권')) 
     study_grade = models.CharField(max_length=2, choices=grade)
     is_open = models.BooleanField()
+    backjoon_id = models.ForeignKey(to="User", on_delete=models.SET_NULL,related_name='study_backjoon_id', verbose_name="백준 아이디")
+    
 
 class Week_study(models.Model):
     study = models.ForeignKey("Study", on_delete=models.CASCADE, verbose_name="해당스터디", null= False)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-
+from users.models import *
 # 스터디명 중복확인 serializer
 
 class StudyNameDuplicatedSerializer(serializers.Serializer):
