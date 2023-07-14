@@ -17,7 +17,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, kakao_id, backjoon_id=None, github_id=None, password=None, **extra_fields):
+    def create_superuser(self, kakao_id, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -26,7 +26,7 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
 
-        return self.create_user(kakao_id, backjoon_id, github_id, password, **extra_fields)
+        return self.create_user(kakao_id, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
