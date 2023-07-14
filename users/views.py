@@ -136,5 +136,5 @@ class FollowView(APIView):
             request.user.unfollow(user)
             return Response({"message": "Unfollow Success!"}, status=status.HTTP_200_OK)
         else:
-            request.user.follow("taeho0888")
+            request.user.follow(user)
             return Response({"message": "Follow Success!"}, status=status.HTTP_201_CREATED)
