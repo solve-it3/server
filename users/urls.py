@@ -1,14 +1,15 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import *
-
-router = DefaultRouter()
+from .views import (
+    kakao_login,
+    KakaoSignUpView,
+    UserUpdateView,
+)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('detail-info/', UserUpdateView.as_view()),
     path('kakao/code/', kakao_login),
     path('login/', KakaoSignUpView.as_view()),
     path('login/refresh/', TokenRefreshView.as_view()),
-    path('detail-info/', UserUpdateView.as_view()),
+
 ]
