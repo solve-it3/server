@@ -1,11 +1,17 @@
 import requests
-from django.shortcuts import redirect
+
 from django.conf import settings
+from django.shortcuts import redirect
+
+from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+from .serializers import UserUpdateSerializer
 from .models import User
+
 
 BASE_URL = settings.BASE_URL
 KAKAO_REST_API_KEY = settings.KAKAO_REST_API_KEY
@@ -71,3 +77,15 @@ class KakaoSignUpView(APIView):
             "access_token": access_token,
             "refresh_token": refresh_token
         })
+
+
+class UserUpdateView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def patch(self, request, *args, **kwargs):
+        serializer = UserUpdateSerializer(
+            request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
