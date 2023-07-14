@@ -3,5 +3,5 @@ from .views import *
 
 urlpatterns = [
     path('kakao/', kakao_login),
-    path('kakao/callback/', kakao_callback),
+    path('kakao-login/', KakaoSignUpView.as_view(), name='kakao_login'),
 ]
