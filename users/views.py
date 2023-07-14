@@ -63,7 +63,6 @@ class KakaoSignUpView(APIView):
 
         # JWT 발급
         token = TokenObtainPairSerializer.get_token(user)
-        print(token)
         access_token = str(token.access_token)
         refresh_token = str(token)
 
