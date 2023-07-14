@@ -3,10 +3,12 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     kakao_login,
     KakaoSignUpView,
+    UserDetailView,
     UserUpdateView,
 )
 
 urlpatterns = [
+    path('detail/<str:backjoon_id>/', UserDetailView.as_view()),
     path('detail-info/', UserUpdateView.as_view()),
     path('kakao/code/', kakao_login),
     path('login/', KakaoSignUpView.as_view()),

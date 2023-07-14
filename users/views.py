@@ -4,12 +4,13 @@ from django.conf import settings
 from django.shortcuts import redirect
 
 from rest_framework import status
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .serializers import UserUpdateSerializer
+from .serializers import UserUpdateSerializer, UserDetailSerializer
 from .models import User
 
 
@@ -89,3 +90,40 @@ class UserUpdateView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserDetailView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserDetailSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def retrieve(self, request, *args, **kwargs):
+        user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+
+        # solved.ac api 통해 가져오고 없으면 "?" 반환
+        try:
+            response = requests.get(
+                f"https://solved.ac/api/v3/user/show?handle={user.backjoon_id}")
+            response.raise_for_status()
+            data = response.json()
+            solved = data.get('solvedCount', '?')
+        except Exception:
+            solved = '?'
+
+        instance = dict()
+        instance['id'] = user.id
+        instance['kakao_id'] = user.kakao_id
+        instance['backjoon_id'] = user.backjoon_id
+        instance['github_id'] = user.github_id
+        instance['company'] = user.company
+        instance['followers'] = user.followers.count()
+        instance['following'] = user.following.count()
+        instance['solved'] = solved
+        try:
+            user.following.get(kakao_id=request.user)
+            instance['is_follow'] = True
+        except User.DoesNotExist:
+            instance['is_follow'] = False
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
