@@ -49,14 +49,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.kakao_id
 
-    def follow(self, user):
+    def follow(self, backjoon_id):
+        user = User.objects.get(backjoon_id=backjoon_id)
         self.following.add(user)
 
-    def unfollow(self, user):
+    def unfollow(self, backjoon_id):
+        user = User.objects.get(backjoon_id=backjoon_id)
         self.following.remove(user)
 
-    def is_following(self, user):
-        return self.following.filter(id=user.id).exists()
+    def is_following(self, backjoon_id):
+        return self.following.filter(backjoon_id=backjoon_id).exists()
 
-    def is_followed_by(self, user):
-        return self.followers.filter(id=user.id).exists()
+    def is_followed_by(self, backjoon_id):
+        return self.followers.filter(backjoon_id=backjoon_id).exists()

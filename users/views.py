@@ -119,8 +119,22 @@ class UserDetailView(RetrieveAPIView):
         instance['followers'] = user.followers.count()
         instance['following'] = user.following.count()
         instance['solved'] = solved
-        instance['is_follow'] = user.following.filter(
-            kakao_id=request.user).exists()
+        instance['is_follow'] = request.user.is_following(
+            kwargs['backjoon_id'])
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+
+class FollowView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def post(self, request, *args, **kwargs):
+        user = kwargs["backjoon_id"]
+
+        if request.user.is_following(user):
+            request.user.unfollow(user)
+            return Response({"message": "Unfollow Success!"}, status=status.HTTP_200_OK)
+        else:
+            request.user.follow("taeho0888")
+            return Response({"message": "Follow Success!"}, status=status.HTTP_201_CREATED)
