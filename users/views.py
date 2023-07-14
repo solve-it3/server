@@ -1,10 +1,10 @@
-from django.shortcuts import redirect
-from django.contrib.auth import get_user_model, login
-from django.conf import settings
 import requests
-from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.conf import settings
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
 
 BASE_URL = settings.BASE_URL
@@ -37,7 +37,7 @@ class KakaoSignUpView(APIView):
             headers=headers,
             data=data
         )
-        print(response.content)
+
         response_json = response.json()
         access_token = response_json.get("access_token")
 
@@ -46,21 +46,29 @@ class KakaoSignUpView(APIView):
             'Content-Type': 'application/x-www-form-urlencoded'
         }
 
-        # 정보 받기 요청
+        # 카카오 프로필 정보 요청
         kakao_profile = requests.get(
             "https://kapi.kakao.com/v2/user/me",
             headers=headers
         )
         profile_json = kakao_profile.json()
-        # if kakao_profile.status_code != 200:
-        #     print(
-        #         f"Error : {kakao_profile.status_code}, {kakao_profile.content}")
 
         kakao_id = profile_json['id']
         profile_image = profile_json['kakao_account']['profile']['thumbnail_image_url']
 
+        # 유저 정보 저장
         user, created = User.objects.get_or_create(kakao_id=kakao_id)
         user.profile_image = profile_image
         user.save()
 
-        return JsonResponse({'message': 'login success'})
+        # JWT 발급
+        token = TokenObtainPairSerializer.get_token(user)
+        print(token)
+        access_token = str(token.access_token)
+        refresh_token = str(token)
+
+        return Response({
+            "created": created,
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        })
