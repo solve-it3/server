@@ -119,11 +119,8 @@ class UserDetailView(RetrieveAPIView):
         instance['followers'] = user.followers.count()
         instance['following'] = user.following.count()
         instance['solved'] = solved
-        try:
-            user.following.get(kakao_id=request.user)
-            instance['is_follow'] = True
-        except User.DoesNotExist:
-            instance['is_follow'] = False
+        instance['is_follow'] = user.following.filter(
+            kakao_id=request.user).exists()
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
