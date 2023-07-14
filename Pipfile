@@ -9,8 +9,8 @@ djangorestframework = "*"
 django-cors-headers = "*"
 django-environ = "*"
 python-dotenv = "*"
-dj-rest-auth = "*"
 requests = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 
