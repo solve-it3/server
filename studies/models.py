@@ -14,7 +14,6 @@ class Study(models.Model):
     default_problem_number = models.IntegerField(null=True, default=None)
     start_date = models.DateField ( auto_now = False , auto_now_add = False)
     is_open = models.BooleanField()
-    backjoon_id = models.ForeignKey(to="User", on_delete=models.SET_NULL,related_name='study_backjoon_id', verbose_name="백준 아이디")
     
 
     def __str__(self):
