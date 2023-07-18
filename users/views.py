@@ -121,6 +121,7 @@ class UserDetailView(RetrieveAPIView):
         instance['solved'] = solved
         instance['is_follow'] = request.user.is_following(
             kwargs['backjoon_id'])
+        instance['studies'] = user.get_studies()
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
