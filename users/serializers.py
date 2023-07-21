@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from studies.models import Study
-from .models import User
+from .models import User, Notification
 
 
 class UserBaseSerializer(ModelSerializer):
@@ -41,3 +41,9 @@ class UserDetailSerializer(UserBaseSerializer):
     class Meta(UserBaseSerializer.Meta):
         fields = ['id', 'kakao_id', 'backjoon_id', 'github_id', 'company',
                   'is_follow', 'followers', 'following', 'solved', 'studies']
+
+
+class NotificationSerializer(ModelSerializer):
+    class Meta:
+        model = Notification
+        exclude = ['id']
