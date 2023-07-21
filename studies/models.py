@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Study(models.Model):
@@ -19,6 +19,7 @@ class Study(models.Model):
     language = models.CharField(max_length=50, null=True, default=None)
     problems_in_week = models.IntegerField(null=True, default=None)
     start_day = models.CharField(max_length=10, null=True, blank=True)
+    current_week = models.IntegerField(default=1)
     created_at = models.DateField(auto_now_add=True)
     is_open = models.BooleanField(default=True)
 
@@ -36,7 +37,11 @@ class Week(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     algorithms = models.CharField(
-        max_length=50, null=False, verbose_name="알고리즘")
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name="알고리즘"
+    )
 
     def __str__(self):
         return f"Week of {self.start_date} - {self.end_date} for {self.study}"
