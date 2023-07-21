@@ -44,7 +44,7 @@ class Week(models.Model):
     )
 
     def __str__(self):
-        return f"Week of {self.start_date} - {self.end_date} for {self.study}"
+        return f"[{self.week_number}주차] {self.study}"
 
 
 class Problem(models.Model):
@@ -58,7 +58,7 @@ class Problem(models.Model):
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return str(self.number)
 
 
 class ProblemStatus(models.Model):
@@ -77,4 +77,4 @@ class ProblemStatus(models.Model):
     solved_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user} status for {self.problem}"
+        return f"{self.user}가 {self.problem}번을 풀었습니다."
