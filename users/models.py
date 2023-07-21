@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
+from studies.models import Study
+
 
 class UserManager(BaseUserManager):
     def create_user(self, kakao_id, password=None, backjoon_id=None, github_id=None, **extra_fields):
@@ -62,3 +64,49 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def is_followed_by(self, backjoon_id):
         return self.followers.filter(backjoon_id=backjoon_id).exists()
+
+    def get_studies(self):
+        return list(self.joined_studies.all())
+
+
+class Notification(models.Model):
+    receiver = models.ManyToManyField(
+        User,
+        related_name='received_notifications'
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_notifications'
+    )
+    study = models.ForeignKey(
+        Study,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    title = models.CharField(max_length=100, null=True, blank=True)
+    content = models.CharField(max_length=100, null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.study}] {self.title}"
+
+    @classmethod
+    def create_notification(cls, sender, study, notification_type, **kwargs):
+        if notification_type == 'solved':
+            receiver = study.members.all()
+            title = "풀이 완료"
+            content = f"{sender}님이 문제를 풀었습니다!"
+        elif notification_type == 'join':
+            receiver = [study.leader]
+            title = "합류 요청"
+            content = f"{sender}님의 합류 요청이 있습니다!"
+        else:
+            raise TypeError("올바른 notification_type 입력해주세요")
+
+        notification = cls(sender=sender, study=study,
+                           title=title, content=content)
+        notification.save()
+        notification.receiver.set(receiver)
+        return notification

@@ -1,14 +1,19 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from django.conf import settings
 
 
 class Study(models.Model):
     name = models.CharField(max_length=255, unique=True)
     leader = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='led_studies', null=True)
-    members = models.ManyToManyField(User, related_name='joined_studies')
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='led_studies',
+        null=True
+    )
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='joined_studies'
+    )
     grade = models.CharField(max_length=255, null=True, blank=True)
     github_repository = models.URLField(null=True, blank=True)
     language = models.CharField(max_length=50, null=True, default=None)
@@ -24,7 +29,10 @@ class Study(models.Model):
 
 class Week(models.Model):
     study = models.ForeignKey(
-        Study, on_delete=models.CASCADE, related_name='weeks')
+        Study,
+        on_delete=models.CASCADE,
+        related_name='weeks'
+    )
     week_number = models.IntegerField(null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
@@ -41,7 +49,10 @@ class Week(models.Model):
 
 class Problem(models.Model):
     week = models.ForeignKey(
-        Week, on_delete=models.CASCADE, related_name='problems')
+        Week,
+        on_delete=models.CASCADE,
+        related_name='problems'
+    )
     name = models.CharField(max_length=255)
     number = models.IntegerField(null=True, blank=True)
     url = models.URLField(null=True, blank=True)
@@ -52,9 +63,15 @@ class Problem(models.Model):
 
 class ProblemStatus(models.Model):
     problem = models.ForeignKey(
-        Problem, on_delete=models.CASCADE, related_name='statuses')
+        Problem,
+        on_delete=models.CASCADE,
+        related_name='statuses'
+    )
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='statuses')
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='statuses'
+    )
     is_solved = models.BooleanField(default=False)
     commit_url = models.URLField(blank=True, null=True)
     solved_at = models.DateField(auto_now_add=True)
