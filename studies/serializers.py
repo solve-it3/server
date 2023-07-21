@@ -17,6 +17,17 @@ class CreateStudySerializer(serializers.ModelSerializer):
         exclude = ['grade', 'study_grade']
 
 
+class WeekBaseSerializer(serializers.ModelSerializer):
+    study = serializers.SlugRelatedField(
+        queryset=Study.objects.all(),
+        slug_field='name'
+    )
+
+    class Meta:
+        model = Week
+        fields = "__all__"
+
+        
 class StudyBaseSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
         many=True,

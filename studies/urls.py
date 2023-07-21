@@ -8,5 +8,6 @@ router.register('', StudyModelViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('study-name-is-unique/', StudyNameDuplicatedView.as_view()),
+    path('<str:study_name>/week<int:week_num>/', WeekRetrieveAPIView.as_view()),
 
 ]

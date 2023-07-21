@@ -1,13 +1,16 @@
+import datetime
 from django.shortcuts import render
-from rest_framework.viewsets import ModelViewSet
+
+from rest_framework import status
 from rest_framework import generics
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+
 from .models import *
 from .serializers import *
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
-# Create your views here.
 
 class StudyNameDuplicatedView(generics.RetrieveAPIView):
     queryset = Study.objects.all()
@@ -36,6 +39,35 @@ class CreateStudyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CreateStudySerializer
 
 
+class WeekRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = Week.objects.all()
+    serializer_class = WeekBaseSerializer
+    permission_classes = [AllowAny, ]
+
+    def retrieve(self, request, *args, **kwargs):
+        week_num = kwargs['week_num']
+        study_name = kwargs['study_name']
+
+        try:
+            study = Study.objects.get(name=study_name)
+        except Study.DoesNotExist:
+            return Response({'error': '그런 이름을 가진 스터디는 없소!'}, status=404)
+
+        week, created = Week.objects.get_or_create(
+            study=study,
+            week_number=week_num
+        )
+
+        if created:
+            last_week = Week.objects.get(study=study, week_number=week_num-1)
+            week.start_date = last_week.end_date + datetime.timedelta(1)
+            week.end_date = last_week.end_date + datetime.timedelta(7)
+            week.save()
+
+        serializer = self.get_serializer(week)
+        return Response(serializer.data)
+
+      
 class StudyModelViewSet(ModelViewSet):
     queryset = Study.objects.all()
     serializer_class = StudyBaseSerializer

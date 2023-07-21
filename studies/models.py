@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Study(models.Model):
@@ -19,6 +19,7 @@ class Study(models.Model):
     language = models.CharField(max_length=50, null=True, default=None)
     problems_in_week = models.IntegerField(null=True, default=None)
     start_day = models.CharField(max_length=10, null=True, blank=True)
+    current_week = models.IntegerField(default=1)
     created_at = models.DateField(auto_now_add=True)
     is_open = models.BooleanField(default=True)
 
@@ -36,10 +37,14 @@ class Week(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     algorithms = models.CharField(
-        max_length=50, null=False, verbose_name="알고리즘")
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name="알고리즘"
+    )
 
     def __str__(self):
-        return f"Week of {self.start_date} - {self.end_date} for {self.study}"
+        return f"[{self.week_number}주차] {self.study}"
 
 
 class Problem(models.Model):
@@ -53,7 +58,7 @@ class Problem(models.Model):
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return str(self.number)
 
 
 class ProblemStatus(models.Model):
@@ -72,4 +77,4 @@ class ProblemStatus(models.Model):
     solved_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user} status for {self.problem}"
+        return f"{self.user}가 {self.problem}번을 풀었습니다."
