@@ -26,3 +26,19 @@ class WeekBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Week
         fields = "__all__"
+
+        
+class StudyBaseSerializer(serializers.ModelSerializer):
+    members = serializers.SlugRelatedField(
+        many=True,
+        queryset=User.objects.all(),
+        slug_field='backjoon_id'
+    )
+    leader = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='backjoon_id'
+    )
+
+    class Meta:
+        model = Study
+        fields = '__all__'

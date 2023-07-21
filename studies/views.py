@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from rest_framework import status
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -11,7 +11,6 @@ from .models import *
 from .serializers import *
 
 
-# Create your views here.
 
 class StudyNameDuplicatedView(generics.RetrieveAPIView):
     queryset = Study.objects.all()
@@ -67,3 +66,9 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
 
         serializer = self.get_serializer(week)
         return Response(serializer.data)
+
+      
+class StudyModelViewSet(ModelViewSet):
+    queryset = Study.objects.all()
+    serializer_class = StudyBaseSerializer
+    permission_classes = [AllowAny, ]
