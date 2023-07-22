@@ -62,3 +62,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def is_followed_by(self, backjoon_id):
         return self.followers.filter(backjoon_id=backjoon_id).exists()
+    
+    def get_studies(self):
+        return list(self.joined_studies.all())
