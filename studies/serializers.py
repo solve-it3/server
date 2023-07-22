@@ -9,6 +9,7 @@ class StudyNameDuplicatedSerializer(serializers.Serializer):
     is_unique = serializers.BooleanField()
 
 
+
 class CreateStudySerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
@@ -75,4 +76,17 @@ class StudyChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
         fields = '__all__'
+
+
+
+class WeekBaseSerializer(serializers.ModelSerializer):
+    study = serializers.SlugRelatedField(
+        queryset=Study.objects.all(),
+        slug_field='name'
+    )
+
+    class Meta:
+        model = Week
+        fields = "__all__"
+
 
