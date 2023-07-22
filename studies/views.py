@@ -61,14 +61,14 @@ class CreatStudyAPIView(generics.RetrieveUpdateDestroyAPIView):
 class StudyModelViewSet(ModelViewSet):
     queryset = Study.objects.all()
     serializer_class = StudyBaseSerializer
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAuthenticated]
 
 
 #user를 가져온다. 
 class UserStudyHomepageAPIView(APIView):
     queryset = ProblemStatus.objects.all()
     serializers_class = UserStudyHomepageSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, study_name):
         data = []
@@ -131,7 +131,7 @@ class DateRecordAPIView(APIView):
     
     queryset = Study.objects.all()
     serializers_class = DateRecordSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     def get(self, request, solved_at, study_name):
         problem_list = ProblemStatus.objects.filter(solved_at=solved_at, is_solved=True)
         problem_data =[]
@@ -154,7 +154,7 @@ class DateRecordAPIView(APIView):
 class WeekRetrieveAPIView(generics.RetrieveAPIView):
     queryset = Week.objects.all()
     serializer_class = WeekBaseSerializer
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAuthenticated ]
 
     def retrieve(self, request, *args, **kwargs):
         week_num = kwargs['week_num']
