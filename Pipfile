@@ -12,6 +12,7 @@ python-dotenv = "*"
 requests = "*"
 djangorestframework-simplejwt = "*"
 
+
 [dev-packages]
 
 [requires]

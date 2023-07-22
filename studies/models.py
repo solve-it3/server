@@ -34,8 +34,11 @@ class Week(models.Model):
         related_name='weeks'
     )
     week_number = models.IntegerField(null=True, blank=True)
+    # 그 스터디를 시작한 날짜
     start_date = models.DateField(null=True, blank=True)
+    # 스터디가 그 주차에 끝나는 날짜
     end_date = models.DateField(null=True, blank=True)
+    # 어떤 알고리즘으로 할것인지
     algorithms = models.CharField(
         max_length=50,
         null=True,
@@ -54,7 +57,9 @@ class Problem(models.Model):
         related_name='problems'
     )
     name = models.CharField(max_length=255)
+    #문제 번호
     number = models.IntegerField(null=True, blank=True)
+    #문제 url
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
@@ -73,7 +78,9 @@ class ProblemStatus(models.Model):
         related_name='statuses'
     )
     is_solved = models.BooleanField(default=False)
+    # commit 주소
     commit_url = models.URLField(blank=True, null=True)
+    # 언제 풀었는지
     solved_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
