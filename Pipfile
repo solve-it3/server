@@ -11,8 +11,7 @@ django-environ = "*"
 python-dotenv = "*"
 requests = "*"
 djangorestframework-simplejwt = "*"
-django-restframework = "*"
-pillow = "*"
+
 
 [dev-packages]
 
