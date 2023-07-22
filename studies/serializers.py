@@ -9,16 +9,9 @@ class StudyNameDuplicatedSerializer(serializers.Serializer):
     is_unique = serializers.BooleanField()
 
 
-
-class CreateStudySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Study
-        fields ='__all__'
-        exclude =['grade', 'study_grade']
-
 class StudyBaseSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
-        many = True,
+        many=True,
         queryset=User.objects.all(),
         slug_field='backjoon_id'
     )
@@ -26,6 +19,7 @@ class StudyBaseSerializer(serializers.ModelSerializer):
         queryset=User.objects.all(),
         slug_field='backjoon_id'
     )
+
     class Meta:
         model = Study
         fields = '__all__'
@@ -35,48 +29,51 @@ class StudyBaseSerializer(serializers.ModelSerializer):
 
 # id에 대한 모든 스터디 목록이 필요 user_study로 만들기
 # 현재 스터디의 주차 -> Week에서 week number를 가져온다. week number는 start_date
-# 진척도 
+# 진척도
 # mvp -> user
 # 지금까지 푼 문제수 -> user의 지금까지 푼 문제수
+
+
 class UserStudyHomepageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
-        fields ='__all__'
-
+        fields = '__all__'
 
 
 class MVPSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProblemStatus
-        fields ='__all__'
-
+        fields = '__all__'
 
 
 class ProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProblemStatus
-        fields ='__all__'
+        fields = '__all__'
+
 
 class UserTotalProblemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProblemStatus
-        fields ='__all__'
+        fields = '__all__'
+
 
 class DateRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
-        fields ='__all__'
+        fields = '__all__'
+
 
 class JandiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
-        fields ='__all__'
+        fields = '__all__'
+
 
 class StudyChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
         fields = '__all__'
-
 
 
 class WeekBaseSerializer(serializers.ModelSerializer):
@@ -88,5 +85,3 @@ class WeekBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Week
         fields = "__all__"
-
-
