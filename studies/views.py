@@ -70,12 +70,12 @@ class UserStudyHomepageAPIView(APIView):
     serializers_class = UserStudyHomepageSerializer
     permission_classes = [AllowAny]
     
-    def get(self, request, study_name, week_number):
+    def get(self, request, study_name):
         data = []
         # user, study, week 지정하기
         user = request.user
         study = get_object_or_404(Study, name=study_name)
-        week = get_object_or_404(Week, study=study, week_number=week_number)
+        week = get_object_or_404(Week, study=study, week_number=study.current_week)
 
         # mvp 정하기
         mvp_users = ProblemStatus.objects.filter(
@@ -111,7 +111,7 @@ class UserStudyHomepageAPIView(APIView):
         ).values('solved_at').annotate(problem_count=Count('problem')).order_by('solved_at')
         jandi ={}
         for entry in solved_counts:
-            solved_at = entry['solved_at'].strftime('%Y-%m-%d')
+            solved_at = entry['solved_at'].strftime('jandi_date : %Y-%m-%d')
             problem_count = entry['problem_count']
             jandi[solved_at] = problem_count
         data.append(jandi)
@@ -144,7 +144,7 @@ class DateRecordAPIView(APIView):
                 'user' : problems.user.backjoon_id,
                 'commit_url' : problems.commit_url,
                 'kakao_id' : problems.user.kakao_id,
-                'image_file' : problems.user.profile_image,
+                'profile_image' : problems.user.profile_image,
             })
     
         return JsonResponse({"date_record" : problem_data})
