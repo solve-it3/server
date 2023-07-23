@@ -41,6 +41,15 @@ class Study(models.Model):
 
         return count
 
+    def get_rank(self):
+        studies = Study.objects.all()
+        rank = dict()
+        for study in studies:
+            rank[f"{study.name}"] = study.problem_count()
+        sorted(rank.items(), key=lambda x: x[1], reverse=True)
+
+        return list(rank).index(self.name) + 1
+
 
 class Week(models.Model):
     study = models.ForeignKey(

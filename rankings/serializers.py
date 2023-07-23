@@ -10,17 +10,42 @@ class UserSerializer(ModelSerializer):
         fields = ["profile_image", "backjoon_id", ]
 
 
+class StudySerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField()
+    members = UserSerializer(many=True)
+    mvp = serializers.SerializerMethodField()
+    problem_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Study
+        fields = ['rank', 'name',  'grade', 'mvp',
+                  'problem_count', 'members', 'is_open']
+
+    def get_rank(self, obj):
+        return obj.get_rank()
+
+    def get_problem_count(self, obj):
+        # week = obj.current_week - 1
+        # return Week.objects.get(study = obj, week_number = week).problem_count()
+        return Study.objects.get(name=obj).problem_count()
+
+    def get_mvp(self, obj):
+        week = obj.current_week
+        return Week.objects.get(study=obj, week_number=week).mvp().backjoon_id
+
+
 class StudyRankingSerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField()
     problem_count = serializers.SerializerMethodField()
     leader = UserSerializer()
     mvp = serializers.SerializerMethodField()
 
     class Meta:
         model = Study
-        fields = ["name", "grade", "leader", "mvp",
-                  # "rank",
-                  "problem_count",
-                  ]
+        fields = ["rank", "name", "grade", "leader", "mvp", "problem_count"]
+
+    def get_rank(self, obj):
+        return obj.get_rank()
 
     def get_problem_count(self, obj):
         # week = obj.current_week - 1
@@ -33,6 +58,7 @@ class StudyRankingSerializer(ModelSerializer):
 
 
 class RankingSerializer(serializers.Serializer):
+    my_study = StudySerializer()
     study_ranking = serializers.ListField()
     # personal_ranking = serializers.SerializerMethodField()
 
