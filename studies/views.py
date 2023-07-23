@@ -152,8 +152,8 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
     # 하나만 있어야함
     serializer_class = WeekBaseSerializer #필수
     # 로그인 필요
-    # permission_classes = [IsAuthenticated]
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+    # permission_classes = [AllowAny]
     # Get요청에는 retrieve가 실행이 됨.
     def retrieve(self, request, *args, **kwargs):
         # url 속에 있는 변수들
@@ -181,5 +181,6 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
             # create는 위에서 되었고 여기서 update
             week.save()
         # serializer_class에 해당하는 serializer를 가져온다.
-        serializer = self.get_serializer(week)
+        # jwt Token이 있어야 request.user를 쓸 수 있다.
+        serializer = self.get_serializer(week, context={'request_user': request.user})
         return Response(serializer.data)
