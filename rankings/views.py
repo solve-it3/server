@@ -10,6 +10,7 @@ class RankingView(ListAPIView):
     permission_classes = [AllowAny, ]
 
     def list(self, request, *args, **kwargs):
+        study_name = kwargs['study_name']
         queryset = self.filter_queryset(self.get_queryset())
         # def filter_queryset(self, request, queryset, view):
         #     return queryset.filter(owner=request.user)
@@ -23,6 +24,9 @@ class RankingView(ListAPIView):
             i += 1
         instance = {}
         instance['study_ranking'] = sorted_data
+
+        study = Study.objects.get(name=study_name)
+        
 
         response = RankingSerializer(instance)
         return Response(response.data)

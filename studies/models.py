@@ -1,5 +1,8 @@
+import datetime
+
 from django.conf import settings
 from django.db import models
+
 
 class Study(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -26,6 +29,19 @@ class Study(models.Model):
     def __str__(self):
         return self.name
 
+    def problem_count(self):
+        today = datetime.date.today()
+        target_date = today - datetime.timedelta(7)
+
+        members = self.members.all()
+
+        count = 0
+        for member in members:
+            count += ProblemStatus.objects.filter(user=member, is_solved=True).filter(
+                solved_at__gte=target_date).filter(solved_at__lte=today).count()
+
+        return count
+
 
 class Week(models.Model):
     study = models.ForeignKey(
@@ -39,7 +55,7 @@ class Week(models.Model):
     # 스터디가 그 주차에 끝나는 날짜
     end_date = models.DateField(null=True, blank=True)
     # 어떤 알고리즘으로 할것인지
-    algorithms = models.CharField(     
+    algorithms = models.CharField(
         max_length=50,
         null=True,
         blank=True,
@@ -48,15 +64,13 @@ class Week(models.Model):
 
     def __str__(self):
         return f"[{self.week_number}주차] {self.study}"
-    
-    def problem_count(self):
-        return ProblemStatus.objects.filter(problem__week=self, is_solved=True).count()
-    
+
     def mvp(self):
         member_list = self.study.members.all()
-        member_problem = {} # 딕셔너리 형태
+        member_problem = {}  # 딕셔너리 형태
         for member in member_list:
-            member_problem[member] = ProblemStatus.objects.filter(user = member, is_solved=True).count()
+            member_problem[member] = ProblemStatus.objects.filter(
+                user=member, is_solved=True).count()
         result = max(member_problem, key=member_problem.get)
         return result
 
@@ -68,9 +82,9 @@ class Problem(models.Model):
         related_name='problems'
     )
     name = models.CharField(max_length=255)
-    #문제 번호
+    # 문제 번호
     number = models.IntegerField(null=True, blank=True)
-    #문제 url
+    # 문제 url
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
