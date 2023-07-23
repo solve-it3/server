@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 class Study(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -18,6 +18,7 @@ class Study(models.Model):
     language = models.CharField(max_length=50, null=True, default=None)
     problems_in_week = models.IntegerField(null=True, default=None)
     start_day = models.CharField(max_length=10, null=True, blank=True)
+    current_week = models.IntegerField(default=1)
     created_at = models.DateField(auto_now_add=True)
     is_open = models.BooleanField(default=True)
     current_week = models.IntegerField(null=True, blank=True, default=1)
@@ -33,14 +34,20 @@ class Week(models.Model):
         related_name='weeks'
     )
     week_number = models.IntegerField(null=True, blank=True)
+    # 그 스터디를 시작한 날짜
     start_date = models.DateField(null=True, blank=True)
+    # 스터디가 그 주차에 끝나는 날짜
     end_date = models.DateField(null=True, blank=True)
-    algorithms = models.CharField(
-        max_length=50, null=False, verbose_name="알고리즘")
-    
+    # 어떤 알고리즘으로 할것인지
+    algorithms = models.CharField(     
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name="알고리즘"
+    )
 
     def __str__(self):
-        return f"Week of {self.start_date} - {self.end_date} for {self.study}"
+        return f"[{self.week_number}주차] {self.study}"
     
     def problem_count(self):
         return ProblemStatus.objects.filter(problem__week=self, is_solved=True).count()
@@ -52,7 +59,6 @@ class Week(models.Model):
             member_problem[member] = ProblemStatus.objects.filter(user = member, is_solved=True).count()
         result = max(member_problem, key=member_problem.get)
         return result
-        
 
 
 class Problem(models.Model):
@@ -62,11 +68,13 @@ class Problem(models.Model):
         related_name='problems'
     )
     name = models.CharField(max_length=255)
+    #문제 번호
     number = models.IntegerField(null=True, blank=True)
+    #문제 url
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return str(self.number)
 
 
 class ProblemStatus(models.Model):
@@ -81,8 +89,10 @@ class ProblemStatus(models.Model):
         related_name='statuses'
     )
     is_solved = models.BooleanField(default=False)
+    # commit 주소
     commit_url = models.URLField(blank=True, null=True)
+    # 언제 풀었는지
     solved_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user} status for {self.problem}"
+        return f"{self.user}가 {self.problem}번을 풀었습니다."
