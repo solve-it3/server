@@ -15,5 +15,6 @@ urlpatterns = [
         DateRecordAPIView.as_view()),
     path('home/<str:study_name>/', UserStudyHomepageAPIView.as_view()),
     path('<str:study_name>/week<int:week_num>/', WeekRetrieveAPIView.as_view()),
-    path('<str:study_name>/week<int:week_num>/problem/',ProblemCreateAPIView.as_view())
+    path('<str:study_name>/week<int:week_num>/problem/',ProblemCreateAPIView.as_view()),
+    path('<str:study_name>/week<int:week_num>/<int:problem_num>/delete',ProblemDestroyAPIView.as_view())
 ]

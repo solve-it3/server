@@ -212,3 +212,38 @@ class ProblemCreateAPIView(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+
+class ProblemDestroyAPIView(generics.DestroyAPIView):
+    # Set the queryset to retrieve ProblemStatus instances
+    # We will filter the queryset to get the specific problem in the week of the study
+    queryset = Problem.objects.all()
+    permission_classes = [AllowAny]
+
+    def destroy(self, request, *args, **kwargs):
+        # Get the study name, week number, and problem number from URL parameters
+        study_name = self.kwargs.get('study_name')
+        week_num = self.kwargs.get('week_num')
+        problem_num = self.kwargs.get('problem_num')
+
+        # study 찾기
+        try:
+            study = Study.objects.get(name=study_name)
+        except Study.DoesNotExist:
+            return Response({"detail": "Study not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # week 찾기
+        try:
+            week = Week.objects.get(study=study, week_number=week_num)
+        except Week.DoesNotExist:
+            return Response({"detail": "Week not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # problem 찾기
+        try:
+            problem = Problem.objects.get(week=week, number=problem_num)
+        except Problem.DoesNotExist:
+            return Response({"detail": "Problem not found."}, status=status.HTTP_404_NOT_FOUND)
+        # Perform the deletion
+        self.perform_destroy(problem)
+        return Response(status=status.HTTP_204_NO_CONTENT)
