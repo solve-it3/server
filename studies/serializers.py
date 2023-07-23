@@ -96,9 +96,10 @@ class ProblemBaseSerializer(serializers.ModelSerializer):
     # 함수써서 Get 해서 가져오는 것
     is_solved = serializers.SerializerMethodField()
     solvers = serializers.SerializerMethodField()
+    commit_url = serializers.SerializerMethodField()
     class Meta:
         model = Problem
-        fields = ["number", "name", "url", "algorithms", "solvers", "is_solved"]
+        fields = ["number", "name", "url", "algorithms", "solvers", "is_solved", "commit_url"]
     # obj가 problem이니깐
     # self는 serializer
     def get_solvers(self, obj):
@@ -113,8 +114,21 @@ class ProblemBaseSerializer(serializers.ModelSerializer):
         return ProblemSolverSerializer(solvers,many=True,context={'problem_number':obj.number}).data
     
     def get_is_solved(self, obj):
-        pass
+        request_user = self.context["request_user"]
+        try :
+            request_user.statuses.get(problem=obj)
+            return True
+        except Exception :
+            return False
         
+    def get_commit_url(self, obj):
+        request_user = self.context["request_user"]
+        try :
+            status = request_user.statuses.get(problem=obj)
+            return status.commit_url
+        except Exception :
+            return None
+    
 
 # 스터디이름
 # 몇주차?
@@ -130,7 +144,12 @@ class WeekBaseSerializer(serializers.ModelSerializer):
         slug_field='name'
     )
     # nested_serializer
-    problems = ProblemBaseSerializer(many = True)
     class Meta:
         model = Week
         fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "problems" ]
+
+    def to_representation(self, instance):
+        # ProblemBaseSerializer 호출 시 context에 request_user 전달
+        representation = super().to_representation(instance)
+        representation['problems'] = ProblemBaseSerializer(instance.problems.all(), many=True, context=self.context).data
+        return representation
