@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.db import models
 
-
 class Study(models.Model):
     name = models.CharField(max_length=255, unique=True)
     leader = models.ForeignKey(
@@ -22,6 +21,7 @@ class Study(models.Model):
     current_week = models.IntegerField(default=1)
     created_at = models.DateField(auto_now_add=True)
     is_open = models.BooleanField(default=True)
+    current_week = models.IntegerField(null=True, blank=True, default=1)
 
     def __str__(self):
         return self.name
@@ -39,7 +39,7 @@ class Week(models.Model):
     # 스터디가 그 주차에 끝나는 날짜
     end_date = models.DateField(null=True, blank=True)
     # 어떤 알고리즘으로 할것인지
-    algorithms = models.CharField(
+    algorithms = models.CharField(     
         max_length=50,
         null=True,
         blank=True,
@@ -48,6 +48,17 @@ class Week(models.Model):
 
     def __str__(self):
         return f"[{self.week_number}주차] {self.study}"
+    
+    def problem_count(self):
+        return ProblemStatus.objects.filter(problem__week=self, is_solved=True).count()
+    
+    def mvp(self):
+        member_list = self.study.members.all()
+        member_problem = {} # 딕셔너리 형태
+        for member in member_list:
+            member_problem[member] = ProblemStatus.objects.filter(user = member, is_solved=True).count()
+        result = max(member_problem, key=member_problem.get)
+        return result
 
 
 class Problem(models.Model):
