@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
 
-
 class Study(models.Model):
     name = models.CharField(max_length=255, unique=True)
     leader = models.ForeignKey(
@@ -45,6 +44,15 @@ class Week(models.Model):
     
     def problem_count(self):
         return ProblemStatus.objects.filter(problem__week=self, is_solved=True).count()
+    
+    def mvp(self):
+        member_list = self.study.members.all()
+        member_problem = {} # 딕셔너리 형태
+        for member in member_list:
+            member_problem[member] = ProblemStatus.objects.filter(user = member, is_solved=True).count()
+        result = max(member_problem, key=member_problem.get)
+        return result
+        
 
 
 class Problem(models.Model):

@@ -12,17 +12,30 @@ class UserSerializer(ModelSerializer):
 class StudyRankingSerializer(ModelSerializer):
     problem_count = serializers.SerializerMethodField()
     leader = UserSerializer()
-    # mvp = serializers.CharField()
+    mvp = serializers.SerializerMethodField()
     class Meta:
         model = Study
-        fields = ["name", "grade", "leader",
-                   #"mvp", "rank", 
+        fields = ["name", "grade", "leader", "mvp",
+                  #"rank", 
                    "problem_count",
                      ]
     def get_problem_count(self, obj):
         week = obj.current_week - 1
         return Week.objects.get(study = obj, week_number = week).problem_count()
     
+    def get_mvp(self, obj):
+        week = obj.current_week - 1
+        return Week.objects.get(study = obj, week_number = week).mvp().backjoon_id
+    
 class RankingSerializer(serializers.Serializer):
     study_ranking = serializers.ListField()
     # personal_ranking = serializers.SerializerMethodField()
+
+
+# SerializerMethodField를 통해 임의의 필드를 사용할 수 있음
+# SerializerMethodField를 선언하면 해당 필드 조회할 때, 실행할 함수를 생성해야 함
+# -> def get_<필드명> 형태로 함수 생성
+# -> 데이터 조회될 때, 이 함수가 실행됨
+# def get_problem_count(self, obj)
+# -> 여기서, obj 즉 object는 serializer에 인자로 들어간 instance를 뜻함
+# 즉, 이 예시에서는 obj에 Study 객체(instance)가 들어가는 것
