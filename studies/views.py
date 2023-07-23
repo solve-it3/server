@@ -216,13 +216,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 class ProblemDestroyAPIView(generics.DestroyAPIView):
-    # Set the queryset to retrieve ProblemStatus instances
-    # We will filter the queryset to get the specific problem in the week of the study
     queryset = Problem.objects.all()
     permission_classes = [AllowAny]
 
     def destroy(self, request, *args, **kwargs):
-        # Get the study name, week number, and problem number from URL parameters
         study_name = self.kwargs.get('study_name')
         week_num = self.kwargs.get('week_num')
         problem_num = self.kwargs.get('problem_num')
