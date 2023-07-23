@@ -21,10 +21,9 @@ class Study(models.Model):
     language = models.CharField(max_length=50, null=True, default=None)
     problems_in_week = models.IntegerField(null=True, default=None)
     start_day = models.CharField(max_length=10, null=True, blank=True)
-    current_week = models.IntegerField(default=1)
+    current_week = models.IntegerField(null=True, blank=True, default=1)
     created_at = models.DateField(auto_now_add=True)
     is_open = models.BooleanField(default=True)
-    current_week = models.IntegerField(null=True, blank=True, default=1)
 
     def __str__(self):
         return self.name
