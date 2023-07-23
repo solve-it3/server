@@ -64,7 +64,7 @@ class UserStudyHomepageAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, study_name):
-        data = []
+        data = dict()
 
         # user, study, week 지정하기
         user = request.user
@@ -86,21 +86,20 @@ class UserStudyHomepageAPIView(APIView):
             mvp_users = mvp_users.filter(num_solved=max_solved_count).values_list(
                 'user__github_id', flat=True)
             mvp_users = list(set(mvp_users))  # 중복된 github_id 제거
-            data.extend({'mvp_github_id': github_id}
-                        for github_id in mvp_users)
+            mvp = [github_id for github_id in mvp_users]
         else:
-            data.append({'message': '해당주차에 문제를 푼 사용자는 없다'})
+            mvp = None
+        data['mvp'] = mvp
 
         # 진척도 구하기
         solved_problems = ProblemStatus.objects.filter(
             user=user, problem__week=week, is_solved=True
         ).count()
         total_week_problem = study.problems_in_week
-        data.append(
-            {'progress': round((solved_problems / total_week_problem) * 100)})
+        data['progress'] = round((solved_problems / total_week_problem) * 100)
 
         # 총 푼 문제수 구하기
-        data.append({'total_solved_problems': solved_problems})
+        data['total_solved_problems'] = solved_problems
 
         # 잔디 색상 기록
         solved_counts = ProblemStatus.objects.filter(
@@ -109,14 +108,14 @@ class UserStudyHomepageAPIView(APIView):
         ).values('solved_at').annotate(problem_count=Count('problem')).order_by('solved_at')
         jandi = {}
         for entry in solved_counts:
-            solved_at = entry['solved_at'].strftime('jandi_date : %Y-%m-%d')
+            solved_at = entry['solved_at'].strftime('%Y-%m-%d')
             problem_count = entry['problem_count']
             jandi[solved_at] = problem_count
-        data.append(jandi)
+        data['jandi'] = jandi
 
         # user별 스터디 목록
         study_list = user.joined_studies.all()
-        data.append({'study_list': [study.name for study in study_list]})
+        data['study_list'] = [study.name for study in study_list]
 
         return JsonResponse(data, safe=False)
 
