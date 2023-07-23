@@ -4,6 +4,8 @@ from studies.models import Study
 from .serializers import RankingSerializer, StudyRankingSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+
+
 class RankingView(ListAPIView):
     queryset = Study.objects.all()
     serializer_class = StudyRankingSerializer
@@ -16,17 +18,13 @@ class RankingView(ListAPIView):
         #     return queryset.filter(owner=request.user)
         serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
-        sorted_data = sorted(data, key=lambda x: x['problem_count'], reverse=True)
+        sorted_data = sorted(data, key=lambda x: x['rank'])
 
-        i = 1
-        for data in sorted_data:
-            data['rank'] = i
-            i += 1
         instance = {}
         instance['study_ranking'] = sorted_data
 
         study = Study.objects.get(name=study_name)
-        
+        instance['my_study'] = study
 
         response = RankingSerializer(instance)
         return Response(response.data)
