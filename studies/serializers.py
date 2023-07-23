@@ -75,13 +75,62 @@ class StudyChangeSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
+class ProblemSolverSerializer(serializers.ModelSerializer):
+    commit_url = serializers.SerializerMethodField()
+    class Meta:
+        model = User
+        fields = ["backjoon_id", "profile_image", "commit_url"]
+    # obj는 User이다 model이 User이므로
+    # 역참조를 쓰기위해 related_name을 사용
+    def get_commit_url(self, obj ):
+        # problem의 number가 problem_number와 같은 obj의 status들을 가져오는 것
+        problem_number = self.context.get("problem_number")
+        try:
+            commit = obj.statuses.get(problem__number = problem_number)
+        except Exception:
+            return None
+        return commit.commit_url
+    
 
+class ProblemBaseSerializer(serializers.ModelSerializer):
+    # 함수써서 Get 해서 가져오는 것
+    is_solved = serializers.SerializerMethodField()
+    solvers = serializers.SerializerMethodField()
+    class Meta:
+        model = Problem
+        fields = ["number", "name", "url", "algorithms", "solvers", "is_solved"]
+    # obj가 problem이니깐
+    # self는 serializer
+    def get_solvers(self, obj):
+        members = obj.week.study.members.all()
+        solvers = list()
+        for member in list(members):
+            try:
+                member.statuses.get(problem=obj, is_solved=True)
+                solvers.append(member)
+            except Exception:
+                pass
+        return ProblemSolverSerializer(solvers,many=True,context={'problem_number':obj.number}).data
+    
+    def get_is_solved(self, obj):
+        pass
+        
+
+# 스터디이름
+# 몇주차?
+# 날짜
+# 알고리즘
+# 문제 -> 번호, 이름
+# 푼사람, 풀었는지 여부
+#
 class WeekBaseSerializer(serializers.ModelSerializer):
+    # foreign_key를 이름으로 볼 수 있다.
     study = serializers.SlugRelatedField(
         queryset=Study.objects.all(),
         slug_field='name'
     )
-
+    # nested_serializer
+    problems = ProblemBaseSerializer(many = True)
     class Meta:
         model = Week
-        fields = "__all__"
+        fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "problems" ]

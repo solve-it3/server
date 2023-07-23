@@ -95,6 +95,8 @@ class Problem(models.Model):
     # 문제 url
     url = models.URLField(null=True, blank=True)
 
+    algorithms = models.CharField(max_length=100, null=True, blank=True)
+
     def __str__(self):
         return str(self.number)
 
