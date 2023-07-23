@@ -6,7 +6,7 @@ from django.http import JsonResponse
 
 from rest_framework import generics
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -147,29 +147,39 @@ class DateRecordAPIView(APIView):
 
 
 class WeekRetrieveAPIView(generics.RetrieveAPIView):
-    queryset = Week.objects.all()
-    serializer_class = WeekBaseSerializer
-    permission_classes = [IsAuthenticated]
-
+    # week 싹다 가져오고
+    queryset = Week.objects.all() #필수
+    # 하나만 있어야함
+    serializer_class = WeekBaseSerializer #필수
+    # 로그인 필요
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+    # Get요청에는 retrieve가 실행이 됨.
     def retrieve(self, request, *args, **kwargs):
+        # url 속에 있는 변수들
         week_num = kwargs['week_num']
         study_name = kwargs['study_name']
 
+        # 예외처리만 하는 것
         try:
             study = Study.objects.get(name=study_name)
         except Study.DoesNotExist:
             return Response({'error': '그런 이름을 가진 스터디는 없소!'}, status=status.HTTP_404_NOT_FOUND)
 
+        # 필터링 get_or_create는 return 값이 두개!
         week, created = Week.objects.get_or_create(
             study=study,
             week_number=week_num
         )
 
+        # 존재하지 않았을 경우
         if created:
+            # 전주차것 가져와서
             last_week = Week.objects.get(study=study, week_number=week_num-1)
             week.start_date = last_week.end_date + datetime.timedelta(1)
             week.end_date = last_week.end_date + datetime.timedelta(7)
+            # create는 위에서 되었고 여기서 update
             week.save()
-
+        # serializer_class에 해당하는 serializer를 가져온다.
         serializer = self.get_serializer(week)
         return Response(serializer.data)
