@@ -5,13 +5,14 @@ from django.shortcuts import redirect
 
 from rest_framework import status
 from rest_framework.generics import RetrieveAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from studies.models import Study, Week, Problem, ProblemStatus
 from .serializers import UserUpdateSerializer, UserDetailSerializer
-from .models import User
+from .models import User, UserProblemSolved
 
 
 BASE_URL = settings.BASE_URL
@@ -88,6 +89,12 @@ class UserUpdateView(APIView):
             request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            
+            # UserProblemSolved 모델 생성
+            ups, created = UserProblemSolved.objects.get_or_create(user=request.user)
+            if created:
+                ups.initialize()
+
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -139,3 +146,12 @@ class FollowView(APIView):
         else:
             request.user.follow(user)
             return Response({"message": "Follow Success!"}, status=status.HTTP_201_CREATED)
+
+
+class ProblemSolvedUpdateView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, *args, **kwagrs):
+        for user in User.objects.all():
+            user.solved_problems.update()
+
