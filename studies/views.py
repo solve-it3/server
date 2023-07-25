@@ -15,7 +15,6 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import Study, Week, Problem, ProblemStatus
 from .serializers import (
-    DateRecordSerializer,
     ProblemCreateSerializer,
     StudyBaseSerializer,
     StudyNameDuplicatedSerializer,
@@ -139,13 +138,10 @@ class DateRecordAPIView(APIView):
             study = Study.objects.get(name=study_name)
         except Study.DoesNotExist:
             return JsonResponse({"message": "그런 스터디는 없소"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # 스터디의 멤버 리스트
-        members = study.members.all()
 
         # 스터디 유저들의 problemstatus 불러오기
         problem_statuses = ProblemStatus.objects.filter(
-            user__in=members,
+            user__in=study.members.all(),
             solved_at=solved_at, 
             is_solved=True
         )
