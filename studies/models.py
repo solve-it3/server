@@ -89,17 +89,18 @@ class Problem(models.Model):
         on_delete=models.CASCADE,
         related_name='problems'
     )
-    name = models.CharField(max_length=255)
-    # 문제 번호
-    number = models.IntegerField(null=True, blank=True)
-    # 문제 url
-    url = models.URLField(null=True, blank=True)
-
+    name = models.CharField(max_length=255) # 문제 이름
+    number = models.IntegerField(null=True, blank=True) # 문제 번호
+    url = models.URLField(null=True, blank=True) # 문제 url
     algorithms = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return str(self.number)
 
+    def get_solvers(self):
+        members=self.week.study.members.all()
+        statuses = self.statuses.filter(user__in=members, is_solved=True)
+        return [status.user for status in statuses]
 
 
 class ProblemStatus(models.Model):
@@ -114,10 +115,8 @@ class ProblemStatus(models.Model):
         related_name='statuses'
     )
     is_solved = models.BooleanField(default=False)
-    # commit 주소
-    commit_url = models.URLField(blank=True, null=True)
-    # 언제 풀었는지
-    solved_at = models.DateField(auto_now_add=True)
+    commit_url = models.URLField(blank=True, null=True) # commit 주소
+    solved_at = models.DateField(auto_now_add=True) # 언제 풀었는 지
 
     def __str__(self):
         return f"{self.user}가 {self.problem}번을 풀었습니다."

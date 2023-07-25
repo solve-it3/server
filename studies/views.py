@@ -131,28 +131,66 @@ class UserStudyHomepageAPIView(APIView):
 
 # 날짜, 문제 번호, 문제 이름, 푼 사람 , 푼사람의 커밋 내역
 class DateRecordAPIView(APIView):
-
-    queryset = Study.objects.all()
-    serializers_class = DateRecordSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request, solved_at, study_name):
-        problem_list = ProblemStatus.objects.filter(
-            solved_at=solved_at, is_solved=True)
-        problem_data = []
-        for problems in problem_list:
-            problem = problems.problem
+        # 스터디 이름 예외처리
+        try:
+            study = Study.objects.get(name=study_name)
+        except Study.DoesNotExist:
+            return JsonResponse({"message": "그런 스터디는 없소"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 스터디의 멤버 리스트
+        members = study.members.all()
+
+        # 스터디 유저들의 problemstatus 불러오기
+        problem_statuses = ProblemStatus.objects.filter(
+            user__in=members,
+            solved_at=solved_at, 
+            is_solved=True
+        )
+
+        # problem status 들의 문제 번호 리스트 (중복 X)
+        problem_list = list(set(status.problem.number for status in problem_statuses))
+
+        # 응답으로 넘겨줄 리스트 선언
+        problem_data = list()
+
+        # 문제 번호마다 푼 사람 추가하는 반복문
+        for problem_number in problem_list:
+            # 해당 스터디의 해당 문제 쿼리셋 불러오기
+            problem = Problem.objects.get(
+                week__study=study,
+                number=problem_number
+            )
+
+            user_list = list()
+            for user in problem.get_solvers():
+                # commit url 불러오기, 없으면 null
+                try:
+                    commit_url = ProblemStatus.objects.get(
+                        problem=problem,
+                        user=user,
+                        is_solved=True,
+                        solved_at=solved_at
+                    ).commit_url
+                except ProblemStatus.DoesNotExist:
+                    commit_url = None
+
+                user_list.append({
+                    "backjoon_id": user.backjoon_id,
+                    "profile_image": user.profile_image,
+                    "commit_url": commit_url,
+                })
+
             problem_data.append({
-                'sovled_at': solved_at,
-                'problem_number': problem.number,
-                'problem_name': problem.name,
-                'user': problems.user.backjoon_id,
-                'commit_url': problems.commit_url,
-                'kakao_id': problems.user.kakao_id,
-                'profile_image': problems.user.profile_image,
+                "problem_number": problem.number,
+                "problem_name": problem.name,
+                "problem_url": problem.url,
+                "solvers": user_list
             })
 
-        return JsonResponse({"date_record": problem_data})
+        return JsonResponse({"data": problem_data})
 
 
 class WeekRetrieveAPIView(generics.RetrieveAPIView):
