@@ -1,3 +1,6 @@
+import datetime
+import requests
+
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
@@ -65,7 +68,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_followed_by(self, backjoon_id):
         return self.followers.filter(backjoon_id=backjoon_id).exists()
 
-
     def get_studies(self):
         return list(self.joined_studies.all())
 
@@ -112,3 +114,61 @@ class Notification(models.Model):
         notification.receiver.set(receiver)
         return notification
 
+
+class UserProblemSolved(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='solved_problems'
+    )
+    problem = models.JSONField(null=True)
+
+    def __str__(self):
+        return f"{self.user.backjoon_id}가 푼 문제 목록"
+    
+    def initialize(self):
+        try:
+            solvedCount = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}').json().get("solvedCount")
+        except Exception:
+            solvedCount = 1
+
+        problem_dict = dict()
+        for i in range(1, solvedCount//50 + 2):
+            problem_items = requests.get(
+                f'https://solved.ac/api/v3/search/problem?query=@{self.user.backjoon_id}&page={i}').json().get('items')
+
+            for item in problem_items:
+                problem_dict[item['problemId']] = None
+        
+        self.problem = problem_dict
+        self.save()
+
+        return self.problem
+    
+    def update(self):
+        try:
+            solvedCount = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}').json().get("solvedCount")
+        except Exception:
+            solvedCount = 1
+
+        problem_list = []
+        for i in range(1, solvedCount//50 + 2):
+            problem_items = requests.get(
+                f'https://solved.ac/api/v3/search/problem?query=@{self.user.backjoon_id}&page={i}').json().get('items')
+
+            for item in problem_items:
+                problem_list.append(item['problemId'])
+
+        for problem in problem_list:
+            if problem not in self.problem.keys():
+                self.problem[problem] = str(datetime.date.today())
+
+        return self.problem
+
+    def update_all(self):
+        try:
+            for user in User.objects.all():
+                if UserProblemSolved.objects.filter(user=user).exists():
+                    user.solved_problems.update()
+        except Exception as e:
+            raise Exception(e)
