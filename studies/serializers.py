@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import *
-from users.models import *
-from rest_framework import request
+
+from users.models import User
+from .models import Study, Week, Problem, ProblemStatus
+
+
 # 스터디명 중복확인 serializer
-
-
 class StudyNameDuplicatedSerializer(serializers.Serializer):
     is_unique = serializers.BooleanField()
 
@@ -39,38 +39,7 @@ class UserStudyHomepageSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
-
-class MVPSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProblemStatus
-        fields = '__all__'
-
-
-class ProgressSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProblemStatus
-        fields = '__all__'
-
-
-class UserTotalProblemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProblemStatus
-        fields = '__all__'
-
-
 class DateRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Study
-        fields = '__all__'
-
-
-class JandiSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Study
-        fields = '__all__'
-
-
-class StudyChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study
         fields = '__all__'
