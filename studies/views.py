@@ -9,12 +9,20 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from .models import *
-from .serializers import *
-from users.models import *
+from .models import Study, Week, Problem, ProblemStatus
+from .serializers import (
+    DateRecordSerializer,
+    ProblemCreateSerializer,
+    StudyBaseSerializer,
+    StudyNameDuplicatedSerializer,
+    UserStudyHomepageSerializer,
+    WeekBaseSerializer,
+
+)
 
 
 def calculate(solved_count):
@@ -165,7 +173,7 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         try:
             study = Study.objects.get(name=study_name)
         except Study.DoesNotExist:
-            return Response({'error': '그런 이름을 가진 스터디는 없소!'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': '그런 이름을 가진 스터디는 없소!'}, status=status.HTTP_404_NOT_FOUND)
 
         # 필터링 get_or_create는 return 값이 두개!
         week, created = Week.objects.get_or_create(
@@ -185,59 +193,84 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         # jwt Token이 있어야 request.user를 쓸 수 있다.
         serializer = self.get_serializer(week, context={'request_user': request.user})
         return Response(serializer.data)
-    
 
-class ProblemCreateAPIView(generics.CreateAPIView):
-    queryset = Problem
+
+class ProblemCreateDestroyAPIView(generics.GenericAPIView):
+    queryset = Problem.objects.all()
     serializer_class = ProblemCreateSerializer
     permission_classes = [IsAuthenticated]
-    def create(self, request, *args, **kwargs):
-        data = {}
-        problem_num = request.data.get("problem_number")
-        data["number"] = problem_num
+
+    def post(self, request, *args, **kwargs):
+        # url 정보 가져오기
+        study_name = kwargs["study_name"]
+        week_number = kwargs["week_num"]
+        problem_num = kwargs["problem_num"]
+        
+        study_id = Study.objects.get(name=study_name).id
+        week_id = Week.objects.get(study=study_id, week_number=week_number).id
+        
+        # 이미 추가된 문제일 경우 예외처리
+        try:
+            Problem.objects.get(week=week_id, number=problem_num)
+            return Response({"message":"이미 추가한 문제입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except Problem.DoesNotExist:
+            pass
+
+        # 백준에서 문제 가져오기
         url = f"https://solved.ac/api/v3/problem/show?problemId={problem_num}"
         response = requests.get(url=url)
         if response.status_code != 200 :
-            pass
+            return Response({"message": "없는 문제 번호입니다."}, status=status.HTTP_404_NOT_FOUND)
         else :
             response_json = response.json()
-        data["name"] = response_json.get("titleKo")
-        data["url"] = f"https://acmicpc.net/problem/{problem_num}"
-        data["algorithms"] = response_json["tags"][0]["displayNames"][0]["name"]
-        study_id = Study.objects.get(name=kwargs["study_name"]).id
-        data["week"] = Week.objects.get(study=study_id, week_number=kwargs["week_num"]).id
+
+        # 저장할 정보 저장
+        data = {
+            "number": problem_num,
+            "name": response_json.get("titleKo"),
+            "url": f"https://acmicpc.net/problem/{problem_num}",
+            "algorithms": response_json["tags"][0]["displayNames"][0]["name"],
+            "week": week_id
+        }
+
+        # 유효성 검사 후 저장
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        serializer.save()
+        
+        # 헤더 추가
+        try:
+            headers = {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            headers = {}
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-class ProblemDestroyAPIView(generics.DestroyAPIView):
-    queryset = Problem.objects.all()
-    permission_classes = [AllowAny]
-
-    def destroy(self, request, *args, **kwargs):
-        study_name = self.kwargs.get('study_name')
-        week_num = self.kwargs.get('week_num')
-        problem_num = self.kwargs.get('problem_num')
+    
+    def delete(self, request, *args, **kwargs):
+        # url 정보 가져오기
+        study_name = kwargs["study_name"]
+        week_number = kwargs["week_num"]
+        problem_num = kwargs["problem_num"]
 
         # study 찾기
         try:
             study = Study.objects.get(name=study_name)
         except Study.DoesNotExist:
-            return Response({"detail": "Study not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
         # week 찾기
         try:
-            week = Week.objects.get(study=study, week_number=week_num)
+            week = Week.objects.get(study=study, week_number=week_number)
         except Week.DoesNotExist:
-            return Response({"detail": "Week not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "추가하지 않은 주차입니다."}, status=status.HTTP_404_NOT_FOUND)
 
         # problem 찾기
         try:
             problem = Problem.objects.get(week=week, number=problem_num)
         except Problem.DoesNotExist:
-            return Response({"detail": "Problem not found."}, status=status.HTTP_404_NOT_FOUND)
-        # Perform the deletion
-        self.perform_destroy(problem)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "이미 삭제했거나 추가한 적 없는 문제 번호입니다."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # 해당 문제 삭제
+        problem.delete()
+
+        return Response({'message': '삭제 완료'}, status=status.HTTP_204_NO_CONTENT)
