@@ -153,3 +153,8 @@ class WeekBaseSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         representation['problems'] = ProblemBaseSerializer(instance.problems.all(), many=True, context=self.context).data
         return representation
+    
+class ProblemCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Problem
+        fields = "__all__"

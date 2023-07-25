@@ -1,4 +1,5 @@
 import datetime
+import requests
 
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
@@ -184,3 +185,62 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         # jwt Token이 있어야 request.user를 쓸 수 있다.
         serializer = self.get_serializer(week, context={'request_user': request.user})
         return Response(serializer.data)
+    
+
+class ProblemCreateAPIView(generics.CreateAPIView):
+    queryset = Problem
+    serializer_class = ProblemCreateSerializer
+    permission_classes = [IsAuthenticated]
+    def create(self, request, *args, **kwargs):
+        data = {}
+        problem_num = request.data.get("problem_number")
+        data["number"] = problem_num
+        url = f"https://solved.ac/api/v3/problem/show?problemId={problem_num}"
+        response = requests.get(url=url)
+        if response.status_code != 200 :
+            pass
+        else :
+            response_json = response.json()
+        data["name"] = response_json.get("titleKo")
+        data["url"] = f"https://acmicpc.net/problem/{problem_num}"
+        data["algorithms"] = response_json["tags"][0]["displayNames"][0]["name"]
+        study_id = Study.objects.get(name=kwargs["study_name"]).id
+        data["week"] = Week.objects.get(study=study_id, week_number=kwargs["week_num"]).id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+from rest_framework import generics, status
+from rest_framework.response import Response
+
+class ProblemDestroyAPIView(generics.DestroyAPIView):
+    queryset = Problem.objects.all()
+    permission_classes = [AllowAny]
+
+    def destroy(self, request, *args, **kwargs):
+        study_name = self.kwargs.get('study_name')
+        week_num = self.kwargs.get('week_num')
+        problem_num = self.kwargs.get('problem_num')
+
+        # study 찾기
+        try:
+            study = Study.objects.get(name=study_name)
+        except Study.DoesNotExist:
+            return Response({"detail": "Study not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # week 찾기
+        try:
+            week = Week.objects.get(study=study, week_number=week_num)
+        except Week.DoesNotExist:
+            return Response({"detail": "Week not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # problem 찾기
+        try:
+            problem = Problem.objects.get(week=week, number=problem_num)
+        except Problem.DoesNotExist:
+            return Response({"detail": "Problem not found."}, status=status.HTTP_404_NOT_FOUND)
+        # Perform the deletion
+        self.perform_destroy(problem)
+        return Response(status=status.HTTP_204_NO_CONTENT)
