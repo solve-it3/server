@@ -212,9 +212,6 @@ class ProblemCreateAPIView(generics.CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-from rest_framework import generics, status
-from rest_framework.response import Response
-
 class ProblemDestroyAPIView(generics.DestroyAPIView):
     queryset = Problem.objects.all()
     permission_classes = [AllowAny]
