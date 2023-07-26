@@ -1,5 +1,6 @@
 import datetime
 import requests
+from requests.exceptions import RequestException, JSONDecodeError
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -128,8 +129,10 @@ class UserProblemSolved(models.Model):
     
     def initialize(self):
         try:
-            solvedCount = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}').json().get("solvedCount")
-        except Exception:
+            response = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}')
+            response.raise_for_status()
+            solvedCount = response.json().get("solvedCount", 1)
+        except (RequestException, JSONDecodeError):
             solvedCount = 1
 
         problem_dict = dict()
@@ -147,8 +150,10 @@ class UserProblemSolved(models.Model):
     
     def update(self):
         try:
-            solvedCount = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}').json().get("solvedCount")
-        except Exception:
+            response = requests.get(f'https://solved.ac/api/v3/user/show?handle={self.user.backjoon_id}')
+            response.raise_for_status()
+            solvedCount = response.json().get("solvedCount", 1)
+        except (RequestException, JSONDecodeError):
             solvedCount = 1
 
         problem_list = []
