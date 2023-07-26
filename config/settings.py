@@ -67,7 +67,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:8000",
-    "https://port-0-server-dihik2mlirmt22y.sel4.cloudtype.app/"
+    "https://port-0-server-dihik2mlirmt22y.sel4.cloudtype.app",
 ]
 
 ROOT_URLCONF = 'config.urls'
