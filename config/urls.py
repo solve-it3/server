@@ -1,8 +1,12 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/user/', include('users.urls')),
+    path('api/study/', include('studies.urls')),
+    path('api/social/', include('rankings.urls')),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
