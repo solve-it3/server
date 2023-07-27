@@ -39,10 +39,6 @@ class UserStudyHomepageSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
-class DateRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Study
-        fields = '__all__'
 
 class ProblemSolverSerializer(serializers.ModelSerializer):
     commit_url = serializers.SerializerMethodField()
