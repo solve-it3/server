@@ -59,11 +59,12 @@ class StudyNameDuplicatedView(generics.RetrieveAPIView):
         return Response(serializer.data)
 
 
+#CRUD 다 구현해주는 ModelViewSet -> url 속 name을 통해 찾는다.
 class StudyModelViewSet(ModelViewSet):
     queryset = Study.objects.all()
     serializer_class = StudyBaseSerializer
     permission_classes = [IsAuthenticated]
-
+    lookup_field = "name"
 
 # user를 가져온다.
 class UserStudyHomepageAPIView(APIView):
