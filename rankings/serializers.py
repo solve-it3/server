@@ -2,7 +2,7 @@ from rest_framework.serializers import ModelSerializer
 from studies.models import Study, Week
 from rest_framework import serializers
 from users.models import User
-
+import requests
 
 class UserSerializer(ModelSerializer):
     class Meta:
@@ -10,7 +10,7 @@ class UserSerializer(ModelSerializer):
         fields = ["profile_image", "backjoon_id", ]
 
 
-class StudySerializer(ModelSerializer):
+class StudyProfileSerializer(ModelSerializer):
     rank = serializers.SerializerMethodField()
     members = UserSerializer(many=True)
     mvp = serializers.SerializerMethodField()
@@ -55,10 +55,53 @@ class StudyRankingSerializer(ModelSerializer):
     def get_mvp(self, obj):
         week = obj.current_week
         return Week.objects.get(study=obj, week_number=week).mvp().backjoon_id
+    
+class PersonalSerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField();
+    problem_count = serializers.SerializerMethodField();
+    follow = serializers.SerializerMethodField();
+    following = serializers.SerializerMethodField();
+    class Meta:
+        model = User
+        fields = ['rank', 'profile_image', 'backjoon_id',
+                  'follow', 'following', 'problem_count', 
+                    'github_id', 'company', 'is_open']
+    
+    def get_rank(self, obj):
+        return obj.get_rank()
 
+    def get_problem_count(self, obj):
+        return obj.problem_count()
+
+    def get_follow(self, obj):
+        return obj.following.count()
+
+    def get_following(self, obj):
+        return obj.followers.count()
+
+
+class PersonalRankingSerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField()
+    problem_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+    class Meta:
+        model = User
+        fields = ['rank', 'profile_image', 'backjoon_id', 'company', 'problem_count', 'is_following']
+
+    def get_rank(self, obj):
+        return obj.get_rank()
+
+    def get_problem_count(self, obj):
+        return obj.problem_count()
+    
+    def get_is_following(self, obj):
+        request_user = self.context["request_user"]
+        return request_user.is_following(obj.backjoon_id)
+
+    
 
 class RankingSerializer(serializers.Serializer):
-    my_study = StudySerializer()
+    my_study = StudyProfileSerializer()
     study_ranking = serializers.ListField()
     # personal_ranking = serializers.SerializerMethodField()
 

@@ -1,6 +1,9 @@
 from django.urls import path, include
-from .views import RankingView
+from .views import StudyProfileView, StudyRankingView, PersonalProfileView, PersonalRankingView
 
 urlpatterns = [
-    path('ranking/<str:study_name>/', RankingView.as_view()),
+    path('study/<str:study_name>/', StudyProfileView.as_view()),
+    path('study-ranking/', StudyRankingView.as_view()),
+    path('profile/', PersonalProfileView.as_view()),
+    path('personal-ranking/', PersonalRankingView.as_view()),
 ]

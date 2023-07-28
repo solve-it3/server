@@ -5,7 +5,8 @@ from requests.exceptions import RequestException, JSONDecodeError
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
-from studies.models import Study
+from studies.models import Study, ProblemStatus
+
 
 
 class UserManager(BaseUserManager):
@@ -71,6 +72,23 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_studies(self):
         return list(self.joined_studies.all())
+    
+    def problem_count(self):
+        today = datetime.date.today()
+        target_date = today - datetime.timedelta(7)
+
+        count = ProblemStatus.objects.filter(user=self, is_solved=True).filter(
+            solved_at__gte=target_date).filter(solved_at__lte=today).count()
+
+        return count
+    
+    def get_rank(self):
+        users = User.objects.filter(is_staff=False)
+        rank = dict()
+        for user in users:
+            rank[f"{user.backjoon_id}"] = user.problem_count()
+        rank = dict(sorted(rank.items(), key=lambda x: x[1], reverse=True))
+        return list(rank).index(self.backjoon_id) + 1
 
 
 class Notification(models.Model):
