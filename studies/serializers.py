@@ -127,3 +127,8 @@ class ProblemCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Problem
         fields = "__all__"
+
+class ProblemStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProblemStatus
+        fields = "__all__"
