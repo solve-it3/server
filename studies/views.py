@@ -1,7 +1,6 @@
 import datetime
 import requests
 
-from datetime import datetime
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
@@ -285,6 +284,7 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
 
         return Response({'message': '삭제 완료'}, status=status.HTTP_204_NO_CONTENT)
 
+
 class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
     queryset = ProblemStatus.objects.all()
     serializer_class = ProblemStatusSerializer
@@ -296,7 +296,8 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         problem_num = kwargs["problem_num"]
         member = request.user
         commit_url = request.data["commit_url"]
-        current_time = datetime.now()
+        current_time = datetime.datetime.now()
+
         # study 찾기
         try:
             study = Study.objects.get(name=study_name)
@@ -320,4 +321,5 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         problem_status.solved_at = current_time
         # 변경사항을 저장
         problem_status.save()
+        
         return Response({"message": "Commit반영함"}, status=status.HTTP_202_ACCEPTED)
