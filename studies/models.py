@@ -116,7 +116,11 @@ class ProblemStatus(models.Model):
     )
     is_solved = models.BooleanField(default=False)
     commit_url = models.URLField(blank=True, null=True) # commit 주소
-    solved_at = models.DateField(auto_now_add=True) # 언제 풀었는 지
+    solved_at = models.DateField(null=True) # 언제 풀었는지
+
 
     def __str__(self):
-        return f"{self.user}가 {self.problem}번을 풀었습니다."
+        if self.is_solved:
+            return f"{self.user}가 {self.problem}번을 풀었습니다."
+        else:
+            return f"{self.user}가 {self.problem}번을 안 풀었습니다."

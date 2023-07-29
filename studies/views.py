@@ -16,6 +16,7 @@ from rest_framework.viewsets import ModelViewSet
 from .models import Study, Week, Problem, ProblemStatus
 from .serializers import (
     ProblemCreateSerializer,
+    ProblemStatusSerializer,
     StudyBaseSerializer,
     StudyNameDuplicatedSerializer,
     UserStudyHomepageSerializer,
@@ -267,12 +268,19 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
             "algorithms": response_json["tags"][0]["displayNames"][0]["name"],
             "week": week_id
         }
-
+        
         # 유효성 검사 후 저장
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         
+        # problemstatus만들어주기
+        problem = Problem.objects.get(week=week_id, number=problem_num)
+        # many to many여서 .all()해야함
+        members = Study.objects.get(name=study_name).members.all()
+        for member in members:
+            ProblemStatus(problem=problem, user=member, solved_at=None).save()
+
         # 헤더 추가
         try:
             headers = {'Location': str(data[api_settings.URL_FIELD_NAME])}
@@ -309,3 +317,43 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
         problem.delete()
 
         return Response({'message': '삭제 완료'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
+    queryset = ProblemStatus.objects.all()
+    serializer_class = ProblemStatusSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def update(self, request, *args, **kwargs):
+        study_name = kwargs["study_name"]
+        week_number = kwargs["week_num"]
+        problem_num = kwargs["problem_num"]
+        member = request.user
+        commit_url = request.data["commit_url"]
+        current_time = datetime.datetime.now()
+
+        # study 찾기
+        try:
+            study = Study.objects.get(name=study_name)
+        except Study.DoesNotExist:
+            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
+        # week 찾기
+        try:
+            week = Week.objects.get(study=study, week_number=week_number)
+        except Week.DoesNotExist:
+            return Response({"message": "추가하지 않은 주차입니다."}, status=status.HTTP_404_NOT_FOUND)
+
+        # problem 찾기
+        try:
+            problem = Problem.objects.get(week=week, number=problem_num)
+        except Problem.DoesNotExist:
+            return Response({"message": "이미 삭제했거나 추가한 적 없는 문제 번호입니다."}, status=status.HTTP_404_NOT_FOUND)
+        
+        problem_status = ProblemStatus.objects.get(problem=problem, user=member)
+        problem_status.commit_url = commit_url
+        problem_status.solved_at = current_time
+        # 변경사항을 저장
+        problem_status.save()
+        
+        return Response({"message": "Commit반영함"}, status=status.HTTP_202_ACCEPTED)
