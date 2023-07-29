@@ -1,33 +1,63 @@
-from django.shortcuts import render
-from rest_framework.generics import ListAPIView
-from studies.models import Study
-from .serializers import RankingSerializer, StudyRankingSerializer
-from rest_framework.permissions import AllowAny
+from rest_framework import status
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from studies.models import Study
+from users.models import User
+from .serializers import StudyRankingSerializer, StudyProfileSerializer, PersonalSerializer, PersonalRankingSerializer
 
-class RankingView(ListAPIView):
+
+class StudyProfileView(RetrieveAPIView):
+    queryset = Study.objects.all()
+    serializer_class = StudyProfileSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = Study.objects.get(name = kwargs['study_name'])
+        except Study.DoesNotExist:
+            return Response({'message': '해당 스터디는 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+    
+
+class StudyRankingView(ListAPIView):
     queryset = Study.objects.all()
     serializer_class = StudyRankingSerializer
-    permission_classes = [AllowAny, ]
+    permission_classes = [IsAuthenticated, ]
 
     def list(self, request, *args, **kwargs):
-        study_name = kwargs['study_name']
         queryset = self.filter_queryset(self.get_queryset())
-        # def filter_queryset(self, request, queryset, view):
-        #     return queryset.filter(owner=request.user)
         serializer = self.get_serializer(queryset, many=True)
-        data = serializer.data
-        sorted_data = sorted(data, key=lambda x: x['rank'])
+        sorted_data = sorted(serializer.data, key=lambda x: x['rank'])
+        return Response(sorted_data)
+    
 
-        instance = {}
-        instance['study_ranking'] = sorted_data
+class PersonalProfileView(RetrieveAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = PersonalSerializer
+    permission_classes = [IsAuthenticated, ]
 
-        study = Study.objects.get(name=study_name)
-        instance['my_study'] = study
+    def retrieve(self, request, *args, **kwargs):
+        instance = request.user
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
-        response = RankingSerializer(instance)
-        return Response(response.data)
+
+class PersonalRankingView(ListAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = PersonalRankingSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True, context={'request_user': request.user})
+        
+        sorted_data = sorted(serializer.data, key=lambda x: x['rank'])
+        return Response(sorted_data)
+
 
 # Study 테이블의 데이터를 모두 가져와서 queryset 필드에 저장
 # serializer.data : serialize된 data가 담겨있음
