@@ -23,7 +23,7 @@ from .serializers import (
 
 )
 
-
+# 단계를 만들어주는 함수
 def calculate(solved_count):
     if solved_count == 0:
         return 1
@@ -36,7 +36,7 @@ def calculate(solved_count):
     else:
         return 5
 
-
+# study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
 class StudyNameDuplicatedView(generics.RetrieveAPIView):
     queryset = Study.objects.all()
     serializer_class = StudyNameDuplicatedSerializer
@@ -72,6 +72,8 @@ class UserStudyHomepageAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, study_name):
+
+        #data는 dict()형식으로 만들어준다
         data = dict()
 
         # user, study, week 지정하기
@@ -86,14 +88,17 @@ class UserStudyHomepageAPIView(APIView):
             is_solved=True,
             problem__week__study__name=study_name
         ).values('user__github_id').annotate(
+            #mvp_user는 user의 github_id로 분류해서 가져오는데 num_solved라는 count를 사용해서 이걸 역순으로 가장 많은 것을 가져온다
             num_solved=Count('problem')
         ).order_by('-num_solved')
 
         if mvp_users:
+            # mvp_users는 objects로 만들어진 집합이므로 첫번째꺼의 num_solved를 뽑아준다
             max_solved_count = mvp_users.first()['num_solved']
             mvp_users = mvp_users.filter(num_solved=max_solved_count).values_list(
                 'user__github_id', flat=True)
             mvp_users = list(set(mvp_users))  # 중복된 github_id 제거
+            # mvp가 여러명일 수도 있으니 만들어준다
             mvp = [github_id for github_id in mvp_users]
         else:
             mvp = None
@@ -101,8 +106,10 @@ class UserStudyHomepageAPIView(APIView):
 
         # 진척도 구하기
         solved_problems = ProblemStatus.objects.filter(
+            # foreign key는 __ 로표시한다. 
             user=user, problem__week=week, is_solved=True
         ).count()
+        
         total_week_problem = study.problems_in_week
         data['progress'] = round((solved_problems / total_week_problem) * 100)
 
@@ -116,6 +123,7 @@ class UserStudyHomepageAPIView(APIView):
         ).values('solved_at').annotate(problem_count=Count('problem')).order_by('solved_at')
         jandi = {}
         for entry in solved_counts:
+            # strftime은 시간을 나타내는 구조
             solved_at = entry['solved_at'].strftime('%Y-%m-%d')
             problem_count = entry['problem_count']
             jandi[solved_at] = problem_count
@@ -141,6 +149,7 @@ class DateRecordAPIView(APIView):
 
         # 스터디 유저들의 problemstatus 불러오기
         problem_statuses = ProblemStatus.objects.filter(
+            #user객체가 study.members.all()에 속하는 하나의 객체일때 즉 모든 user에 대해서
             user__in=study.members.all(),
             solved_at=solved_at, 
             is_solved=True
@@ -236,6 +245,7 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         # url 정보 가져오기
+        # 하나씩 지정해준다는 느낌
         study_name = kwargs["study_name"]
         week_number = kwargs["week_num"]
         problem_num = kwargs["problem_num"]
