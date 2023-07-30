@@ -39,6 +39,8 @@ def calculate(solved_count):
 # study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
 class StudyNameDuplicatedView(generics.RetrieveAPIView):
     queryset = Study.objects.all()
+    permission_classes = [AllowAny]
+
     serializer_class = StudyNameDuplicatedSerializer
     # 보는 것만 해야하니까 RetrieveAPIView만 만들어준다
     # retrieve를 오버라이딩해준다
