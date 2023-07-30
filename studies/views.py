@@ -38,28 +38,16 @@ def calculate(solved_count):
         return 5
 
 # study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
-class StudyNameDuplicatedView(generics.RetrieveAPIView):
-    queryset = Study.objects.all()
-    permission_classes = [AllowAny]
+class StudyNameDuplicatedView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    serializer_class = StudyNameDuplicatedSerializer
-    # 보는 것만 해야하니까 RetrieveAPIView만 만들어준다
-    # retrieve를 오버라이딩해준다
-
-    def retrieve(self, request, *args, **kwargs):
-        # instance는 딕셔너리 json파일 형태로 하고
-        instance = {}
+    def get(self, request, *args, **kwargs):
         try:
-            # Study의 객체들에서 name이 data.get한것의 name을 가져온다
-            # 이 객체가 실패하면 False, 유일하면 True를 가져온다
-            Study.objects.get(name=request.data.get('name'))
-            instance['is_unique'] = False
+            Study.objects.get(name=kwargs['study_name'])
+            return Response({'is_unique': False})
 
         except Study.DoesNotExist:
-            instance['is_unique'] = True
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+            return Response({'is_unique': True})
 
 
 #CRUD 다 구현해주는 ModelViewSet -> url 속 name을 통해 찾는다.
@@ -154,6 +142,7 @@ class DateRecordAPIView(APIView):
         # 스터디 유저들의 problemstatus 불러오기
         problem_statuses = ProblemStatus.objects.filter(
             #user객체가 study.members.all()에 속하는 하나의 객체일때 즉 모든 user에 대해서
+            problem__week__study=study,
             user__in=study.members.all(),
             solved_at=solved_at, 
             is_solved=True
@@ -172,19 +161,13 @@ class DateRecordAPIView(APIView):
                 week__study=study,
                 number=problem_number
             )
-
             user_list = list()
-            for user in problem.get_solvers():
+            problem_statuses_for_problem = problem_statuses.filter(problem=problem, solved_at=solved_at)
+            
+            for status in problem_statuses_for_problem:
+                user = status.user
                 # commit url 불러오기, 없으면 null
-                try:
-                    commit_url = ProblemStatus.objects.get(
-                        problem=problem,
-                        user=user,
-                        is_solved=True,
-                        solved_at=solved_at
-                    ).commit_url
-                except ProblemStatus.DoesNotExist:
-                    commit_url = None
+                commit_url = status.commit_url or None
 
                 user_list.append({
                     "backjoon_id": user.backjoon_id,
