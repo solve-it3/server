@@ -40,7 +40,7 @@ def calculate(solved_count):
 # study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
 class StudyNameDuplicatedView(APIView):
     permission_classes = [IsAuthenticated]
-
+    # 굳이 serializer 사용하지 않고 objects.get을 통해서 kwargs로 그 이름에 대한 것이 존재하는지 확인만헤서 response로 전달을 해주면 된다
     def get(self, request, *args, **kwargs):
         try:
             Study.objects.get(name=kwargs['study_name'])
@@ -63,18 +63,25 @@ class UserStudyHomepageAPIView(APIView):
     serializers_class = UserStudyHomepageSerializer
     permission_classes = [IsAuthenticated]
 
+    # 정보를 가져오기만 하면 된다.
     def get(self, request, study_name):
 
         #data는 dict()형식으로 만들어준다
         data = dict()
 
         # user, study, week 지정하기
+
+        # user는 request로 지정한 user를 가져온다
         user = request.user
         study = get_object_or_404(Study, name=study_name)
+        # week는 
         week = get_object_or_404(
             Week, study=study, week_number=study.current_week)
 
         # mvp 정하기
+
+        #problem foreign key의 week와 week가 같고 문제를 풀었고, 그 스터디 이름이 같을때
+        #user foreign key의 github아이디를 prblem의 기준으로 정렬한것을 가져온 객체
         mvp_users = ProblemStatus.objects.filter(
             problem__week=week,
             is_solved=True,
@@ -147,7 +154,7 @@ class DateRecordAPIView(APIView):
             solved_at=solved_at, 
             is_solved=True
         )
-
+        # 위의 problem status와 같다
         # problem status 들의 문제 번호 리스트 (중복 X)
         problem_list = list(set(status.problem.number for status in problem_statuses))
 
@@ -155,8 +162,10 @@ class DateRecordAPIView(APIView):
         problem_data = list()
 
         # 문제 번호마다 푼 사람 추가하는 반복문
+        # problem_number는 그 주차에 풀었다고 되어있는 문제들 전체다
         for problem_number in problem_list:
             # 해당 스터디의 해당 문제 쿼리셋 불러오기
+            # 한 문제당 그 문제에 해당하는 걸 들고오기
             problem = Problem.objects.get(
                 week__study=study,
                 number=problem_number
@@ -195,7 +204,7 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
     # permission_classes = [AllowAny]
     # Get요청에는 retrieve가 실행이 됨.
     def retrieve(self, request, *args, **kwargs):
-        # url 속에 있는 변수들
+        # url 속에 있는 변수들 -> 넣어줘야 하는 것들
         week_num = kwargs['week_num']
         study_name = kwargs['study_name']
 
@@ -215,6 +224,7 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         if created:
             # 전주차것 가져와서
             last_week = Week.objects.get(study=study, week_number=week_num-1)
+            #timedelta를 통해서 확인 가능하다
             week.start_date = last_week.end_date + datetime.timedelta(1)
             week.end_date = last_week.end_date + datetime.timedelta(7)
             # create는 위에서 되었고 여기서 update
@@ -241,18 +251,22 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
         week_id = Week.objects.get(study=study_id, week_number=week_number).id
         
         # 이미 추가된 문제일 경우 예외처리
+        # week자체의 id를(하나일때)가져와서 설정해도 괜찮다
         try:
             Problem.objects.get(week=week_id, number=problem_num)
             return Response({"message":"이미 추가한 문제입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except Problem.DoesNotExist:
             pass
+        
 
         # 백준에서 문제 가져오기
         url = f"https://solved.ac/api/v3/problem/show?problemId={problem_num}"
+        # response에 url정보를 가져온것을 담는ㄷ
         response = requests.get(url=url)
         if response.status_code != 200 :
             return Response({"message": "없는 문제 번호입니다."}, status=status.HTTP_404_NOT_FOUND)
         else :
+            # json파일로 전달을 해준다
             response_json = response.json()
 
         # 저장할 정보 저장
@@ -278,6 +292,7 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
 
         # 헤더 추가
         try:
+            #어떤 필드에 대해 리디렉션 URI를 제공할 것인지를 나타내는 설정 변수
             headers = {'Location': str(data[api_settings.URL_FIELD_NAME])}
         except (TypeError, KeyError):
             headers = {}
