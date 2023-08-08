@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'studies.apps.StudiesConfig',
     'rankings.apps.RankingsConfig',
+    'searches.apps.SearchesConfig',
 
     # DRF
     'rest_framework',
