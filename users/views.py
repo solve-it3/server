@@ -17,7 +17,7 @@ from .models import User, UserProblemSolved
 
 BASE_URL = settings.BASE_URL
 KAKAO_REST_API_KEY = settings.KAKAO_REST_API_KEY
-
+REDIRECT_URI = settings.KAKAO_REDIRECT_URI
 
 # 인가코드 받는 부분, 프론트에서 개발 시 삭제
 def kakao_login(request):
@@ -35,7 +35,7 @@ class KakaoSignUpView(APIView):
         data = {
             "grant_type": "authorization_code",
             "client_id": KAKAO_REST_API_KEY,
-            "redirect_uri": f"{BASE_URL}/api/user/kakao/callback",
+            "redirect_uri": REDIRECT_URI,
             "code": request.data.get('code'),
         }
 

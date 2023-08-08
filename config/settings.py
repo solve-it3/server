@@ -178,6 +178,7 @@ SIMPLE_JWT = {
 }
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
