@@ -18,7 +18,6 @@ from .serializers import (
     ProblemCreateSerializer,
     ProblemStatusSerializer,
     StudyBaseSerializer,
-    StudyNameDuplicatedSerializer,
     UserStudyHomepageSerializer,
     WeekBaseSerializer,
 
