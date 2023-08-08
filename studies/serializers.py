@@ -4,10 +4,6 @@ from users.models import User
 from .models import Study, Week, Problem, ProblemStatus
 
 
-# 스터디명 중복확인 serializer
-class StudyNameDuplicatedSerializer(serializers.Serializer):
-    is_unique = serializers.BooleanField()
-
 
 class StudyBaseSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
