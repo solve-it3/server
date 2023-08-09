@@ -104,16 +104,20 @@ class WeekBaseSerializer(serializers.ModelSerializer):
         queryset=Study.objects.all(),
         slug_field='name'
     )
+    has_github = serializers.SerializerMethodField()
     # nested_serializer
     class Meta:
         model = Week
-        fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "problems" ]
+        fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "has_github", "problems" ]
 
     def to_representation(self, instance):
         # ProblemBaseSerializer 호출 시 context에 request_user 전달
         representation = super().to_representation(instance)
         representation['problems'] = ProblemBaseSerializer(instance.problems.all(), many=True, context=self.context).data
         return representation
+    
+    def get_has_github(self, obj):
+        return obj.study.github_repository
     
 class ProblemCreateSerializer(serializers.ModelSerializer):
     class Meta:
