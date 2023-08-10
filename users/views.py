@@ -47,6 +47,9 @@ class KakaoSignUpView(APIView):
         )
 
         response_json = response.json()
+        if response.status_code != 200:
+            return Response(response_json, status=status.HTTP_400_BAD_REQUEST)
+        
         access_token = response_json.get("access_token")
 
         headers = {
@@ -59,8 +62,11 @@ class KakaoSignUpView(APIView):
             "https://kapi.kakao.com/v2/user/me",
             headers=headers
         )
-        profile_json = kakao_profile.json()
 
+        profile_json = kakao_profile.json()
+        if kakao_profile.status_code != 200:
+            return Response(profile_json, status=status.HTTP_400_BAD_REQUEST)
+        
         kakao_id = profile_json['id']
         profile_image = profile_json['kakao_account']['profile']['thumbnail_image_url']
 

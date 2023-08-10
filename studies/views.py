@@ -77,6 +77,8 @@ class UserStudyHomepageAPIView(APIView):
         week = get_object_or_404(
             Week, study=study, week_number=study.current_week)
 
+        data['request_user_joined'] = user in study.members.all()
+
         # mvp 정하기
 
         #problem foreign key의 week와 week가 같고 문제를 풀었고, 그 스터디 이름이 같을때
