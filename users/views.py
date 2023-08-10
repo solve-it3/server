@@ -48,7 +48,7 @@ class KakaoSignUpView(APIView):
 
         response_json = response.json()
         if response.status_code != 200:
-            return Response(response_json(), status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_json, status=status.HTTP_400_BAD_REQUEST)
         
         access_token = response_json.get("access_token")
 
