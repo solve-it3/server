@@ -39,7 +39,7 @@ class StudyRankingSerializer(ModelSerializer):
 
     class Meta:
         model = Study
-        fields = ["rank", "name", "grade", "leader", "mvp", "problem_count"]
+        fields = ["id", "rank", "name", "grade", "leader", "mvp", "problem_count"]
 
     def get_rank(self, obj):
         return obj.get_rank()
