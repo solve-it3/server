@@ -7,11 +7,11 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # 필요한 패키지 설치
-COPY requirements.txt .
+COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 프로젝트 파일 복사
-COPY . .
+COPY . /app/
 
 # 서버 실행 명령어
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
