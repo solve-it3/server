@@ -1,5 +1,5 @@
 # 베이스 이미지로 Python 3.9를 사용
-FROM python:3.10-slim-buster
+FROM python:3.9
 
 ENV PYTHONUNBUFFERED 1
 

@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
-    'port-0-server-dihik2mlirmt22y.sel4.cloudtype.app'
+    'port-0-server-ac2nlljge0uw.sel3.cloudtype.app'
 ]
 
 
