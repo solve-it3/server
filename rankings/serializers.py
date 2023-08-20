@@ -1,16 +1,16 @@
-from rest_framework.serializers import ModelSerializer
-from studies.models import Study, Week
 from rest_framework import serializers
-from users.models import User
+from rest_framework.serializers import ModelSerializer
 
+from studies.models import Study, Week
+from users.models import User
 
 class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ["profile_image", "backjoon_id", ]
+        fields = ["profile_image", "backjoon_id"]
 
 
-class StudySerializer(ModelSerializer):
+class StudyProfileSerializer(ModelSerializer):
     rank = serializers.SerializerMethodField()
     members = UserSerializer(many=True)
     mvp = serializers.SerializerMethodField()
@@ -18,16 +18,13 @@ class StudySerializer(ModelSerializer):
 
     class Meta:
         model = Study
-        fields = ['rank', 'name',  'grade', 'mvp',
-                  'problem_count', 'members', 'is_open']
+        fields = ['rank', 'name',  'grade', 'mvp', 'problem_count', 'members', 'is_open']
 
     def get_rank(self, obj):
         return obj.get_rank()
 
     def get_problem_count(self, obj):
-        # week = obj.current_week - 1
-        # return Week.objects.get(study = obj, week_number = week).problem_count()
-        return Study.objects.get(name=obj).problem_count()
+        return obj.problem_count()
 
     def get_mvp(self, obj):
         week = obj.current_week
@@ -42,26 +39,58 @@ class StudyRankingSerializer(ModelSerializer):
 
     class Meta:
         model = Study
-        fields = ["rank", "name", "grade", "leader", "mvp", "problem_count"]
+        fields = ["id", "rank", "name", "grade", "leader", "mvp", "problem_count"]
 
     def get_rank(self, obj):
         return obj.get_rank()
 
     def get_problem_count(self, obj):
-        # week = obj.current_week - 1
-        # return Week.objects.get(study = obj, week_number = week).problem_count()
-        return Study.objects.get(name=obj).problem_count()
+        return obj.problem_count()
 
     def get_mvp(self, obj):
         week = obj.current_week
         return Week.objects.get(study=obj, week_number=week).mvp().backjoon_id
+    
+class PersonalSerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField();
+    problem_count = serializers.SerializerMethodField();
+    follow = serializers.SerializerMethodField();
+    following = serializers.SerializerMethodField();
+    class Meta:
+        model = User
+        fields = ['rank', 'profile_image', 'backjoon_id','follow', 'following', 
+                  'problem_count', 'github_id', 'company', 'is_open']
+    
+    def get_rank(self, obj):
+        return obj.get_rank()
+
+    def get_problem_count(self, obj):
+        return obj.problem_count()
+
+    def get_follow(self, obj):
+        return obj.following.count()
+
+    def get_following(self, obj):
+        return obj.followers.count()
 
 
-class RankingSerializer(serializers.Serializer):
-    my_study = StudySerializer()
-    study_ranking = serializers.ListField()
-    # personal_ranking = serializers.SerializerMethodField()
+class PersonalRankingSerializer(ModelSerializer):
+    rank = serializers.SerializerMethodField()
+    problem_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+    class Meta:
+        model = User
+        fields = ['rank', 'profile_image', 'backjoon_id', 'company', 'problem_count', 'is_following']
 
+    def get_rank(self, obj):
+        return obj.get_rank()
+
+    def get_problem_count(self, obj):
+        return obj.problem_count()
+    
+    def get_is_following(self, obj):
+        request_user = self.context["request_user"]
+        return request_user.is_following(obj.backjoon_id)
 
 # SerializerMethodField를 통해 임의의 필드를 사용할 수 있음
 # SerializerMethodField를 선언하면 해당 필드 조회할 때, 실행할 함수를 생성해야 함

@@ -17,7 +17,7 @@ from .models import User, UserProblemSolved
 
 BASE_URL = settings.BASE_URL
 KAKAO_REST_API_KEY = settings.KAKAO_REST_API_KEY
-
+REDIRECT_URI = settings.KAKAO_REDIRECT_URI
 
 # 인가코드 받는 부분, 프론트에서 개발 시 삭제
 def kakao_login(request):
@@ -35,7 +35,7 @@ class KakaoSignUpView(APIView):
         data = {
             "grant_type": "authorization_code",
             "client_id": KAKAO_REST_API_KEY,
-            "redirect_uri": f"{BASE_URL}/api/user/kakao/callback",
+            "redirect_uri": REDIRECT_URI,
             "code": request.data.get('code'),
         }
 
@@ -47,6 +47,9 @@ class KakaoSignUpView(APIView):
         )
 
         response_json = response.json()
+        if response.status_code != 200:
+            return Response(response_json, status=status.HTTP_400_BAD_REQUEST)
+        
         access_token = response_json.get("access_token")
 
         headers = {
@@ -59,8 +62,11 @@ class KakaoSignUpView(APIView):
             "https://kapi.kakao.com/v2/user/me",
             headers=headers
         )
-        profile_json = kakao_profile.json()
 
+        profile_json = kakao_profile.json()
+        if kakao_profile.status_code != 200:
+            return Response(profile_json, status=status.HTTP_400_BAD_REQUEST)
+        
         kakao_id = profile_json['id']
         profile_image = profile_json['kakao_account']['profile']['thumbnail_image_url']
 
@@ -69,6 +75,13 @@ class KakaoSignUpView(APIView):
         user.profile_image = profile_image
         user.save()
 
+        # 유저의 스터디 하나 반환
+        study = Study.objects.filter(members=user).first()
+        if study:
+            user_study = study.id
+        else:
+            user_study = None
+
         # JWT 발급
         token = TokenObtainPairSerializer.get_token(user)
         access_token = str(token.access_token)
@@ -76,6 +89,7 @@ class KakaoSignUpView(APIView):
 
         return Response({
             "created": created,
+            "study": user_study,
             "access": access_token,
             "refresh": refresh_token
         })

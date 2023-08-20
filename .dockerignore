@@ -1,0 +1,30 @@
+# Python 관련
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.log
+
+# Django 관련
+db.sqlite3
+*.sqlite3
+
+# 개발 도구 관련
+Pipfile.lock
+README.md
+.venv/
+.env
+
+# Git 관련
+.git/
+.gitignore
+.github/
+
+# IDE 관련 (예: PyCharm, VSCode 등)
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS 관련
+.DS_Store

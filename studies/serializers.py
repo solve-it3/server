@@ -4,11 +4,6 @@ from users.models import User
 from .models import Study, Week, Problem, ProblemStatus
 
 
-# 스터디명 중복확인 serializer
-class StudyNameDuplicatedSerializer(serializers.Serializer):
-    is_unique = serializers.BooleanField()
-
-
 class StudyBaseSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
         many=True,
@@ -24,6 +19,11 @@ class StudyBaseSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
+class StudyResponseSerializer(StudyBaseSerializer):
+    class Meta(StudyBaseSerializer.Meta):
+        fields = ['id', 'name']
+
+        
 # user_id, 유저 스터디 목록, 현재 스터디의 주차, 스터디 이름, 스터디 등급, 진척도, MVP, request user가 푼 문제수, 스터디 잔디
 # 스터디 이름, 리더, members, grade, 깃헙, 언어, 문제풀 수, 시작날짜, 만들어 진거, 오픈할지 존재
 
@@ -39,10 +39,6 @@ class UserStudyHomepageSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
-class DateRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Study
-        fields = '__all__'
 
 class ProblemSolverSerializer(serializers.ModelSerializer):
     commit_url = serializers.SerializerMethodField()
@@ -112,10 +108,11 @@ class WeekBaseSerializer(serializers.ModelSerializer):
         queryset=Study.objects.all(),
         slug_field='name'
     )
+    has_github = serializers.SerializerMethodField()
     # nested_serializer
     class Meta:
         model = Week
-        fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "problems" ]
+        fields = ["id", "study", "week_number", "start_date", "end_date", "algorithms", "has_github", "problems" ]
 
     def to_representation(self, instance):
         # ProblemBaseSerializer 호출 시 context에 request_user 전달
@@ -123,7 +120,15 @@ class WeekBaseSerializer(serializers.ModelSerializer):
         representation['problems'] = ProblemBaseSerializer(instance.problems.all(), many=True, context=self.context).data
         return representation
     
+    def get_has_github(self, obj):
+        return obj.study.github_repository
+    
 class ProblemCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Problem
+        fields = "__all__"
+
+class ProblemStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProblemStatus
         fields = "__all__"

@@ -11,7 +11,8 @@ django-environ = "*"
 python-dotenv = "*"
 requests = "*"
 djangorestframework-simplejwt = "*"
-
+jamo = "*"
+gunicorn = "*"
 
 [dev-packages]
 

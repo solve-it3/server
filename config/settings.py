@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
-    'port-0-server-dihik2mlirmt22y.sel4.cloudtype.app'
+    'port-0-server-ac2nlljge0uw.sel3.cloudtype.app'
 ]
 
 
@@ -32,12 +32,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
 
     # 애플리케이션
     'users.apps.UsersConfig',
     'studies.apps.StudiesConfig',
     'rankings.apps.RankingsConfig',
+    'searches.apps.SearchesConfig',
+    'problems.apps.ProblemsConfig',
 
     # DRF
     'rest_framework',
@@ -57,6 +58,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+APPEND_SLASH = False
 
 # CORS 허용된 출처
 CORS_ALLOWED_ORIGINS = [
@@ -177,6 +180,7 @@ SIMPLE_JWT = {
 }
 
 KAKAO_REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
