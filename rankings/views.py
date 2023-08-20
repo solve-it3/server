@@ -16,7 +16,7 @@ class StudyProfileView(RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         try:
-            instance = Study.objects.get(name = kwargs['study_name'])
+            instance = Study.objects.get(id=kwargs['study_id'])
         except Study.DoesNotExist:
             return Response({'message': '해당 스터디는 존재하지 않습니다.'}, status=status.HTTP_404_NOT_FOUND)
         

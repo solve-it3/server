@@ -10,6 +10,6 @@ from .views import (
 urlpatterns = [
     path('personal-ranking/', PersonalRankingView.as_view()),
     path('profile/', PersonalProfileView.as_view()),
-    path('study/<str:study_name>/', StudyProfileView.as_view()),
+    path('study/<int:study_id>/', StudyProfileView.as_view()),
     path('study-ranking/', StudyRankingView.as_view()),
 ]
