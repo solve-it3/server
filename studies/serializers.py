@@ -4,7 +4,6 @@ from users.models import User
 from .models import Study, Week, Problem, ProblemStatus
 
 
-
 class StudyBaseSerializer(serializers.ModelSerializer):
     members = serializers.SlugRelatedField(
         many=True,
@@ -20,6 +19,11 @@ class StudyBaseSerializer(serializers.ModelSerializer):
         model = Study
         fields = '__all__'
 
+class StudyResponseSerializer(StudyBaseSerializer):
+    class Meta(StudyBaseSerializer.Meta):
+        fields = ['id', 'name']
+
+        
 # user_id, 유저 스터디 목록, 현재 스터디의 주차, 스터디 이름, 스터디 등급, 진척도, MVP, request user가 푼 문제수, 스터디 잔디
 # 스터디 이름, 리더, members, grade, 깃헙, 언어, 문제풀 수, 시작날짜, 만들어 진거, 오픈할지 존재
 

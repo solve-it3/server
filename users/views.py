@@ -75,6 +75,13 @@ class KakaoSignUpView(APIView):
         user.profile_image = profile_image
         user.save()
 
+        # 유저의 스터디 하나 반환
+        study = Study.objects.filter(members=user).first()
+        if study:
+            user_study = study.id
+        else:
+            user_study = None
+
         # JWT 발급
         token = TokenObtainPairSerializer.get_token(user)
         access_token = str(token.access_token)
@@ -82,6 +89,7 @@ class KakaoSignUpView(APIView):
 
         return Response({
             "created": created,
+            "study": user_study,
             "access": access_token,
             "refresh": refresh_token
         })
