@@ -128,7 +128,7 @@ class StudyAPIView(APIView):
         request_user = request.user
 
         study = Study.objects.filter(members=user)
-        serializer = StudySerializer(study, many=True)
+        serializer = StudySerializer(study, many=True, context={'request_user': request_user})
         return Response(serializer.data)
 
 

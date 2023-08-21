@@ -27,10 +27,12 @@ class StudySerializer(ModelSerializer):
     rank = serializers.SerializerMethodField()
     problem_count = serializers.SerializerMethodField()
     mvp = serializers.SerializerMethodField()
+    is_member = serializers.SerializerMethodField()
+    is_leader = serializers.SerializerMethodField()
 
     class Meta:
         model = Study
-        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', ]
+        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', 'is_leader', 'is_member', 'is_leader']
 
     def get_rank(self, obj):
         return obj.get_rank()
@@ -40,6 +42,12 @@ class StudySerializer(ModelSerializer):
 
     def get_mvp(self, obj):
         return obj.get_mvp()
+
+    def get_is_leader(self, obj):
+        return obj.leader == self.context['request_user']
+
+    def get_is_member(self, obj):
+        return self.context['request_user'] in obj.members.all()
 
 
 class NotificationSerializer(ModelSerializer):
