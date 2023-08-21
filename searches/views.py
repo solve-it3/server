@@ -15,6 +15,8 @@ class SearchAPIView(APIView):
 
     @staticmethod
     def similarity(value, query):
+        if not query:
+            return 0
         value = value.lower()
         query = query.lower()
         return sum(1 for _ in j2hcj(h2j(value)).split(query)) - 1
