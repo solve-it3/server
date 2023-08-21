@@ -28,6 +28,25 @@ class Study(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def grade(self):
+        total_solved_problem = self.total_solved_problem()
+        if 0 <= total_solved_problem < 20:
+            return "✈️ 성층권"
+        elif 20 <= total_solved_problem < 40:
+            return "🛰️ 카르만선"
+        elif 40 <= total_solved_problem < 60:
+            return "🌖 지구-달"
+        elif 60 <= total_solved_problem < 80:
+            return "🎆 랑그라주점"
+        elif 80 <= total_solved_problem < 100:
+            return "🌫️ 오르트구름"
+        else:
+            return "🚀 성간우주"
+
+    def total_solved_problem(self):
+        return ProblemStatus.objects.filter(user__in=self.members.all(), is_solved=True).count()
+
     def problem_count(self):
         today = datetime.date.today()
         target_date = today - datetime.timedelta(7)
@@ -43,13 +62,49 @@ class Study(models.Model):
 
     def get_rank(self):
         studies = Study.objects.all()
-        rank = dict()
+        scores = []
         for study in studies:
-            rank[f"{study.name}"] = study.problem_count()
-        sorted(rank.items(), key=lambda x: x[1], reverse=True)
+            scores.append((study.name, study.problem_count()))
 
-        return list(rank).index(self.name) + 1
-    
+        # 문제 수로 정렬
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+
+        # 등수 부여 (동점자 고려)
+        rank = 1
+        last_score = -1
+        ranks = {}
+        for name, score in sorted_scores:
+            if score != last_score:  # 이전 점수와 다르면 등수 증가
+                rank += len([x for x, y in ranks.items() if y == last_score])  # 이전 점수와 동일한 사람 수만큼 등수 증가
+                last_score = score
+            ranks[name] = rank
+
+        return ranks.get(self.name, 0)
+
+    def get_mvp(self):
+        today = datetime.date.today()
+        target_date = today - datetime.timedelta(7)
+
+        members = self.members.all()
+        mvp = None
+        max_problem_count = 0
+
+        for member in members:
+            problem_count = ProblemStatus.objects.filter(
+                user=member, is_solved=True
+            ).filter(
+                solved_at__gte=target_date, solved_at__lte=today
+            ).count()
+
+            if problem_count > max_problem_count:
+                max_problem_count = problem_count
+                mvp = member
+        
+        if mvp:
+            return mvp.backjoon_id
+        return mvp
+        
+
     def add_member(self, user):
         if user not in self.members.all():
             self.members.add(user)
