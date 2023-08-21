@@ -62,21 +62,24 @@ class Study(models.Model):
 
     def get_rank(self):
         studies = Study.objects.all()
-        rank_list = []
-
+        scores = []
         for study in studies:
-            rank_list.append((study.name, study.problem_count()))
+            scores.append((study.name, study.problem_count()))
 
-        sorted_rank_list = sorted(rank_list, key=lambda x: x[1], reverse=True)
-        self_score = self.problem_count()
-        self_rank = 1
+        # 문제 수로 정렬
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
 
-        for i, (name, score) in enumerate(sorted_rank_list):
-            if score > self_score:
-                self_rank = i + 2
-                break
+        # 등수 부여 (동점자 고려)
+        rank = 1
+        last_score = -1
+        ranks = {}
+        for name, score in sorted_scores:
+            if score != last_score:  # 이전 점수와 다르면 등수 증가
+                rank += len([x for x, y in ranks.items() if y == last_score])  # 이전 점수와 동일한 사람 수만큼 등수 증가
+                last_score = score
+            ranks[name] = rank
 
-        return self_rank
+        return ranks.get(self.name, 0)
 
     def get_mvp(self):
         today = datetime.date.today()
