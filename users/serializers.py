@@ -23,11 +23,22 @@ class MemberSerializer(UserBaseSerializer):
 
 class StudySerializer(ModelSerializer):
     members = MemberSerializer(many=True, read_only=True)
+    rank = serializers.SerializerMethodField()
+    problem_count = serializers.SerializerMethodField()
+    mvp = serializers.SerializerMethodField()
 
     class Meta:
         model = Study
-        exclude = ['id', 'github_repository', 'language',
-                   'problems_in_week', 'start_day', 'created_at', 'leader']
+        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', ]
+
+    def get_rank(self, obj):
+        return obj.get_rank()
+
+    def get_problem_count(self, obj):
+        return obj.problem_count()
+
+    def get_mvp(self, obj):
+        return obj.get_mvp()
 
 
 class UserDetailSerializer(UserBaseSerializer):
@@ -46,4 +57,4 @@ class UserDetailSerializer(UserBaseSerializer):
 class NotificationSerializer(ModelSerializer):
     class Meta:
         model = Notification
-        exclude = ['id']
+        fields = ['id', 'title','content','created_at', 'notification_type']

@@ -4,15 +4,15 @@ from django.conf import settings
 from django.shortcuts import redirect
 
 from rest_framework import status
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from studies.models import Study, Week, Problem, ProblemStatus
-from .serializers import UserUpdateSerializer, UserDetailSerializer
-from .models import User, UserProblemSolved
+from .serializers import UserUpdateSerializer, UserDetailSerializer, NotificationSerializer, StudySerializer
+from .models import User, UserProblemSolved, Notification
 
 
 BASE_URL = settings.BASE_URL
@@ -145,6 +145,50 @@ class UserDetailView(RetrieveAPIView):
         instance['studies'] = user.get_studies()
 
         serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+
+class StudyAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        data = {}
+        try:
+            user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"유저 {kwargs['backjoon_id']}를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        request_user = request.user
+
+        study = Study.objects.filter(members=user)
+        serializer = StudySerializer(study, many=True)
+        return Response(serializer.data)
+
+
+class NotificationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"유저 {kwargs['backjoon_id']}를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        request_user = request.user
+        if request_user != user:
+            return Response(
+                {"message": "본인의 알림만 볼 수 있습니다."}, 
+                status=status.HTTP_204_NO_CONTENT
+            )
+        
+        queryset = Notification.objects.filter(receiver=request_user)
+        serializer = NotificationSerializer(queryset, many=True)
+        
         return Response(serializer.data)
 
 
