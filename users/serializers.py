@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
+from studies.serializers import StudyResponseSerializer
 from studies.models import Study
 from .models import User, Notification
 
@@ -26,10 +27,12 @@ class StudySerializer(ModelSerializer):
     rank = serializers.SerializerMethodField()
     problem_count = serializers.SerializerMethodField()
     mvp = serializers.SerializerMethodField()
+    is_member = serializers.SerializerMethodField()
+    is_leader = serializers.SerializerMethodField()
 
     class Meta:
         model = Study
-        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', ]
+        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', 'is_leader', 'is_member', 'is_leader']
 
     def get_rank(self, obj):
         return obj.get_rank()
@@ -40,21 +43,15 @@ class StudySerializer(ModelSerializer):
     def get_mvp(self, obj):
         return obj.get_mvp()
 
+    def get_is_leader(self, obj):
+        return obj.leader == self.context['request_user']
 
-class UserDetailSerializer(UserBaseSerializer):
-    is_follow = serializers.BooleanField()
-    followers = serializers.IntegerField()
-    following = serializers.IntegerField()
-    solved = serializers.CharField()
-    # personal_ranking = serializers.IntegerField()
-    studies = StudySerializer(many=True, read_only=True)
-
-    class Meta(UserBaseSerializer.Meta):
-        fields = ['id', 'kakao_id', 'backjoon_id', 'github_id', 'company',
-                  'is_follow', 'followers', 'following', 'solved', 'studies']
+    def get_is_member(self, obj):
+        return self.context['request_user'] in obj.members.all()
 
 
 class NotificationSerializer(ModelSerializer):
+    study = StudyResponseSerializer()
     class Meta:
         model = Notification
-        fields = ['id', 'title','content','created_at', 'notification_type']
+        fields = ['title', 'content', 'study', 'created_at', 'notification_type']
