@@ -49,6 +49,10 @@ class Study(models.Model):
         sorted(rank.items(), key=lambda x: x[1], reverse=True)
 
         return list(rank).index(self.name) + 1
+    
+    def add_member(self, user):
+        if user not in self.members.all():
+            self.members.add(user)
 
 
 class Week(models.Model):

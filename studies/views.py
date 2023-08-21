@@ -13,6 +13,7 @@ from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
+from users.models import User, Notification
 from .models import Study, Week, Problem, ProblemStatus
 from .serializers import (
     ProblemCreateSerializer,
@@ -36,6 +37,16 @@ def calculate(solved_count):
         return 4
     else:
         return 5
+    
+
+def wrong_study_response():
+    return Response({
+                "message": "해당 id값을 가진 스터디는 없습니다.",
+                "study": StudyResponseSerializer(Study.objects.all(), many=True).data
+                }, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 # study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
 class StudyNameDuplicatedView(APIView):
@@ -55,7 +66,7 @@ class StudyModelViewSet(ModelViewSet):
     queryset = Study.objects.all()
     serializer_class = StudyBaseSerializer
     permission_classes = [IsAuthenticated]
-    lookup_field = "name"
+
 
 # user를 가져온다.
 class UserStudyHomepageAPIView(APIView):
@@ -65,12 +76,10 @@ class UserStudyHomepageAPIView(APIView):
 
     # 정보를 가져오기만 하면 된다.
     def get(self, request, study_id):
-
         #data는 dict()형식으로 만들어준다
         data = dict()
 
         # user, study, week 지정하기
-
         # user는 request로 지정한 user를 가져온다
         user = request.user
         study = get_object_or_404(Study, id=study_id)
@@ -146,12 +155,7 @@ class DateRecordAPIView(APIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({
-                "message": "그런 스터디는 없소",
-                "study": StudyResponseSerializer(Study.objects.all(), many=True).data
-                }, 
-                status=404
-            )
+            return wrong_study_response()
 
         # 스터디 유저들의 problemstatus 불러오기
         problem_statuses = ProblemStatus.objects.filter(
@@ -219,7 +223,7 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({'message': '그런 스터디는 없소!'}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # 필터링 get_or_create는 return 값이 두개!
         week, created = Week.objects.get_or_create(
@@ -315,7 +319,7 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # week 찾기
         try:
@@ -352,7 +356,7 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # week 찾기
         try:
@@ -373,3 +377,90 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         problem_status.save()
         
         return Response({"message": "Commit반영함"}, status=status.HTTP_202_ACCEPTED)
+
+
+class StudyJoinAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+
+        try:
+            Notification.objects.get(
+                receiver=study.leader,
+                sender=request_user,
+                study=study,
+                title="합류 요청"
+            )
+            return Response({"message": "이미 보낸 요청입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except Notification.DoesNotExist:
+            pass
+
+        if request_user in study.members.all():
+            return Response({"message": "이미 합류해있는 멤버입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            Notification.create_notification(request_user, study, "join")
+            return Response({"message": "합류 요청 완료"}, status=status.HTTP_201_CREATED)
+    
+
+class StudyJoinAcceptAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+
+        try:
+            joined_user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"{kwargs['backjoon_id']} 유저를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+                
+        study.add_member(joined_user)
+        Notification.create_notification(
+            sender=request_user, 
+            study=study, 
+            notification_type="join_accepted", 
+            receivers=joined_user
+        )
+
+        return Response({"message": "합류 수락 완료"})
+
+
+class StudyJoinRejectAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+
+        try:
+            joined_user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"{kwargs['backjoon_id']} 유저를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+        
+        Notification.create_notification(
+            sender=request_user, 
+            study=study, 
+            notification_type="join_rejected", 
+            user=joined_user
+        )
+
+        return Response({"message": "합류 거절 완료"})

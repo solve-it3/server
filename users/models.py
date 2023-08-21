@@ -117,21 +117,29 @@ class Notification(models.Model):
     @classmethod
     def create_notification(cls, sender, study, notification_type, **kwargs):
         if notification_type == 'solved':
-            receiver = study.members.all()
+            receivers = study.members.all()
             title = "풀이 완료"
             content = f"{sender}님이 문제를 풀었습니다!"
         elif notification_type == 'join':
-            receiver = [study.leader]
+            receivers = [study.leader]
             title = "합류 요청"
             content = f"{sender}님의 합류 요청이 있습니다!"
+        elif notification_type == 'join_accepted':
+            receivers = [kwargs['receivers']]
+            title = "합류 요청 수락"
+            content = f"{study.name}에 합류하셨습니다."
+        elif notification_type == 'join_rejected':
+            receivers = [kwargs['receivers']]
+            title = "합류 요청 거절"
+            content = f"{study.name} 합류 요청이 거절당했습니다."
         else:
             raise TypeError("올바른 notification_type 입력해주세요")
 
-        notification = cls(sender=sender, study=study,
-                           title=title, content=content)
+        notification = cls(sender=sender, study=study, title=title, content=content)
         notification.save()
-        notification.receiver.set(receiver)
+        notification.receiver.set(receivers)  # Use the set() method to update the receivers
         return notification
+
 
 
 class UserProblemSolved(models.Model):
