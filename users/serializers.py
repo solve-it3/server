@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
+from studies.serializers import StudyResponseSerializer
 from studies.models import Study
 from .models import User, Notification
 
@@ -41,20 +42,8 @@ class StudySerializer(ModelSerializer):
         return obj.get_mvp()
 
 
-class UserDetailSerializer(UserBaseSerializer):
-    is_follow = serializers.BooleanField()
-    followers = serializers.IntegerField()
-    following = serializers.IntegerField()
-    solved = serializers.CharField()
-    # personal_ranking = serializers.IntegerField()
-    studies = StudySerializer(many=True, read_only=True)
-
-    class Meta(UserBaseSerializer.Meta):
-        fields = ['id', 'kakao_id', 'backjoon_id', 'github_id', 'company',
-                  'is_follow', 'followers', 'following', 'solved', 'studies']
-
-
 class NotificationSerializer(ModelSerializer):
+    study = StudyResponseSerializer()
     class Meta:
         model = Notification
-        fields = ['id', 'title','content','created_at', 'notification_type']
+        fields = ['title', 'content', 'study', 'created_at', 'notification_type']

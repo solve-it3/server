@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from studies.models import Study, Week, Problem, ProblemStatus
-from .serializers import UserUpdateSerializer, UserDetailSerializer, NotificationSerializer, StudySerializer
+from .serializers import UserUpdateSerializer, NotificationSerializer, StudySerializer
 from .models import User, UserProblemSolved, Notification
 
 
@@ -113,41 +113,6 @@ class UserUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserDetailView(RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserDetailSerializer
-    permission_classes = [IsAuthenticated, ]
-
-    def retrieve(self, request, *args, **kwargs):
-        user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
-
-        # solved.ac api 통해 가져오고 없으면 "?" 반환
-        try:
-            response = requests.get(
-                f"https://solved.ac/api/v3/user/show?handle={user.backjoon_id}")
-            response.raise_for_status()
-            data = response.json()
-            solved = data.get('solvedCount', '?')
-        except Exception:
-            solved = '?'
-
-        instance = dict()
-        instance['id'] = user.id
-        instance['kakao_id'] = user.kakao_id
-        instance['backjoon_id'] = user.backjoon_id
-        instance['github_id'] = user.github_id
-        instance['company'] = user.company
-        instance['followers'] = user.followers.count()
-        instance['following'] = user.following.count()
-        instance['solved'] = solved
-        instance['is_follow'] = request.user.is_following(
-            kwargs['backjoon_id'])
-        instance['studies'] = user.get_studies()
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-
 class StudyAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -186,7 +151,8 @@ class NotificationAPIView(APIView):
                 status=status.HTTP_204_NO_CONTENT
             )
         
-        queryset = Notification.objects.filter(receiver=request_user)
+        queryset = Notification.objects.filter(receiver=request_user).order_by('-created_at')
+        # TODO 갯수로 자르되 합류 요청은 뜨게 하기
         serializer = NotificationSerializer(queryset, many=True)
         
         return Response(serializer.data)
