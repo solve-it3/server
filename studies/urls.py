@@ -4,6 +4,9 @@ from .views import (
     DateRecordAPIView,
     ProblemCreateDestroyAPIView,
     ProblemStatusUpdateAPIView,
+    StudyJoinAPIView,
+    StudyJoinAcceptAPIView,
+    StudyJoinRejectAPIView,
     StudyModelViewSet,
     StudyNameDuplicatedView,
     UserStudyHomepageAPIView,
@@ -21,4 +24,8 @@ urlpatterns = [
     path('<int:study_id>/week<int:week_num>/', WeekRetrieveAPIView.as_view()),
     path('<int:study_id>/week<int:week_num>/<int:problem_num>/', ProblemCreateDestroyAPIView.as_view()),
     path('<int:study_id>/week<int:week_num>/<int:problem_num>/commit/', ProblemStatusUpdateAPIView.as_view()),
+    path('join/<int:study_id>/', StudyJoinAPIView.as_view()),
+    path('join/<int:study_id>/<str:backjoon_id>/accept/', StudyJoinAcceptAPIView.as_view()),
+    path('join/<int:study_id>/<str:backjoon_id>/reject/', StudyJoinRejectAPIView.as_view()),
+    
 ]
