@@ -431,10 +431,10 @@ class StudyJoinAcceptAPIView(APIView):
                 notification_type='join'
             )
         except Notification.DoesNotExist:
-            Response({"message": "해당 요청을 찾을 수 없습니다."})
+            Response({"message": "해당 요청을 찾을 수 없습니다."}, status=status.HTTP_204_NO_CONTENT)
         
         if join_request.is_read:
-            return Response({"message": "이미 처리된 요청입니다."})
+            return Response({"message": "이미 처리된 요청입니다."}, status=status.HTTP_208_ALREADY_REPORTED)
         join_request.is_read=True
         join_request.save()
 
@@ -476,10 +476,10 @@ class StudyJoinRejectAPIView(APIView):
                 notification_type='join'
             )
         except Notification.DoesNotExist:
-            Response({"message": "해당 요청을 찾을 수 없습니다."})
-
+            Response({"message": "해당 요청을 찾을 수 없습니다."}, status=status.HTTP_204_NO_CONTENT)
+        
         if join_request.is_read:
-            return Response({"message": "이미 처리된 요청입니다."})
+            return Response({"message": "이미 처리된 요청입니다."}, status=status.HTTP_208_ALREADY_REPORTED)
         join_request.is_read=True
         join_request.save()
 
