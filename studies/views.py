@@ -422,7 +422,22 @@ class StudyJoinAcceptAPIView(APIView):
             study = Study.objects.get(id=kwargs['study_id'])
         except Study.DoesNotExist:
             return wrong_study_response()
-                
+
+        try:
+            join_request = Notification.objects.get(
+                sender=joined_user,
+                receiver=study.leader,
+                study=study,
+                notification_type='join'
+            )
+        except Notification.DoesNotExist:
+            Response({"message": "해당 요청을 찾을 수 없습니다."})
+        
+        if join_request.is_read:
+            return Response({"message": "이미 처리된 요청입니다."})
+        join_request.is_read=True
+        join_request.save()
+
         study.add_member(joined_user)
         Notification.create_notification(
             sender=request_user, 
@@ -452,12 +467,27 @@ class StudyJoinRejectAPIView(APIView):
             study = Study.objects.get(id=kwargs['study_id'])
         except Study.DoesNotExist:
             return wrong_study_response()
-        
+
+        try:
+            join_request = Notification.objects.get(
+                sender=joined_user,
+                receiver=study.leader,
+                study=study,
+                notification_type='join'
+            )
+        except Notification.DoesNotExist:
+            Response({"message": "해당 요청을 찾을 수 없습니다."})
+
+        if join_request.is_read:
+            return Response({"message": "이미 처리된 요청입니다."})
+        join_request.is_read=True
+        join_request.save()
+
         Notification.create_notification(
             sender=request_user, 
             study=study, 
             notification_type="join_rejected", 
-            user=joined_user
+            receivers=joined_user
         )
 
         return Response({"message": "합류 거절 완료"})
