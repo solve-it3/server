@@ -1,6 +1,8 @@
+from datetime import datetime
 import requests
 
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import redirect
 
 from rest_framework import status
@@ -26,7 +28,7 @@ def kakao_login(request):
 
 
 class KakaoSignUpView(APIView):
-    permission_classes = [AllowAny, ]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         headers = {
@@ -96,7 +98,7 @@ class KakaoSignUpView(APIView):
 
 
 class UserUpdateView(APIView):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
         serializer = UserUpdateSerializer(
@@ -151,15 +153,26 @@ class NotificationAPIView(APIView):
                 status=status.HTTP_204_NO_CONTENT
             )
         
-        queryset = Notification.objects.filter(receiver=request_user).order_by('-created_at')
-        # TODO 갯수로 자르되 합류 요청은 뜨게 하기
-        serializer = NotificationSerializer(queryset, many=True)
-        
+        current_date = datetime.now().date()
+        combined_query = (
+            Q(notification_type="solved", study__weeks__start_date__lte=current_date) |
+            Q(notification_type="join") |
+            Q(notification_type="join_accepted") |
+            Q(notification_type="join_rejected")
+        )
+
+        queryset = Notification.objects.filter(
+            combined_query,
+            receiver=request_user,
+            is_read=False
+        ).order_by('created_at')
+
+        serializer = NotificationSerializer(queryset, many=True)       
         return Response(serializer.data)
 
 
 class FollowView(APIView):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         user = kwargs["backjoon_id"]

@@ -54,4 +54,4 @@ class NotificationSerializer(ModelSerializer):
     study = StudyResponseSerializer()
     class Meta:
         model = Notification
-        fields = ['title', 'content', 'study', 'created_at', 'notification_type']
+        fields = ['id', 'title', 'content', 'study', 'created_at', 'notification_type']
