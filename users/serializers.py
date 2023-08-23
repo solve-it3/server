@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
+from studies.serializers import StudyResponseSerializer
 from studies.models import Study
 from .models import User, Notification
 
@@ -23,27 +24,34 @@ class MemberSerializer(UserBaseSerializer):
 
 class StudySerializer(ModelSerializer):
     members = MemberSerializer(many=True, read_only=True)
+    rank = serializers.SerializerMethodField()
+    problem_count = serializers.SerializerMethodField()
+    mvp = serializers.SerializerMethodField()
+    is_member = serializers.SerializerMethodField()
+    is_leader = serializers.SerializerMethodField()
 
     class Meta:
         model = Study
-        exclude = ['id', 'github_repository', 'language',
-                   'problems_in_week', 'start_day', 'created_at', 'leader']
+        fields = ['id', 'name', 'rank', 'grade', 'members', 'problem_count', 'mvp', 'is_leader', 'is_member', 'is_leader']
 
+    def get_rank(self, obj):
+        return obj.get_rank()
 
-class UserDetailSerializer(UserBaseSerializer):
-    is_follow = serializers.BooleanField()
-    followers = serializers.IntegerField()
-    following = serializers.IntegerField()
-    solved = serializers.CharField()
-    # personal_ranking = serializers.IntegerField()
-    studies = StudySerializer(many=True, read_only=True)
+    def get_problem_count(self, obj):
+        return obj.problem_count()
 
-    class Meta(UserBaseSerializer.Meta):
-        fields = ['id', 'kakao_id', 'backjoon_id', 'github_id', 'company',
-                  'is_follow', 'followers', 'following', 'solved', 'studies']
+    def get_mvp(self, obj):
+        return obj.get_mvp()
+
+    def get_is_leader(self, obj):
+        return obj.leader == self.context['request_user']
+
+    def get_is_member(self, obj):
+        return self.context['request_user'] in obj.members.all()
 
 
 class NotificationSerializer(ModelSerializer):
+    study = StudyResponseSerializer()
     class Meta:
         model = Notification
-        exclude = ['id']
+        fields = ['id', 'title', 'content', 'study', 'created_at', 'notification_type']

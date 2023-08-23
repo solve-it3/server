@@ -13,6 +13,7 @@ from rest_framework.settings import api_settings
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
+from users.models import User, Notification
 from .models import Study, Week, Problem, ProblemStatus
 from .serializers import (
     ProblemCreateSerializer,
@@ -36,18 +37,27 @@ def calculate(solved_count):
         return 4
     else:
         return 5
+    
+
+def wrong_study_response():
+    study_response = StudyResponseSerializer(Study.objects.all(), many=True).data
+    return Response(
+        {
+            "message": "해당 id값을 가진 스터디는 없습니다.",
+            "study": study_response
+        }, 
+        status=status.HTTP_404_NOT_FOUND
+    )
+
 
 # study name이 중복이 되는지 확인을 해주는 API -> 하나를 확인만 하니까 Retrieve만 해주면 된다
 class StudyNameDuplicatedView(APIView):
     permission_classes = [IsAuthenticated]
     # 굳이 serializer 사용하지 않고 objects.get을 통해서 kwargs로 그 이름에 대한 것이 존재하는지 확인만헤서 response로 전달을 해주면 된다
     def get(self, request, *args, **kwargs):
-        try:
-            Study.objects.get(name=kwargs['study_name'])
-            return Response({'is_unique': False})
-
-        except Study.DoesNotExist:
-            return Response({'is_unique': True})
+        study_name = kwargs['study_name']
+        is_unique = not Study.objects.filter(name=study_name).exists()
+        return Response({'is_unique': is_unique})
 
 
 #CRUD 다 구현해주는 ModelViewSet -> url 속 name을 통해 찾는다.
@@ -55,7 +65,7 @@ class StudyModelViewSet(ModelViewSet):
     queryset = Study.objects.all()
     serializer_class = StudyBaseSerializer
     permission_classes = [IsAuthenticated]
-    lookup_field = "name"
+
 
 # user를 가져온다.
 class UserStudyHomepageAPIView(APIView):
@@ -65,18 +75,14 @@ class UserStudyHomepageAPIView(APIView):
 
     # 정보를 가져오기만 하면 된다.
     def get(self, request, study_id):
-
         #data는 dict()형식으로 만들어준다
         data = dict()
 
         # user, study, week 지정하기
-
         # user는 request로 지정한 user를 가져온다
         user = request.user
         study = get_object_or_404(Study, id=study_id)
-        # week는 
-        week = get_object_or_404(
-            Week, study=study, week_number=study.current_week)
+        week = get_object_or_404(Week, study=study, week_number=study.current_week)
 
         data['request_user_joined'] = user in study.members.all()
 
@@ -84,23 +90,23 @@ class UserStudyHomepageAPIView(APIView):
 
         #problem foreign key의 week와 week가 같고 문제를 풀었고, 그 스터디 이름이 같을때
         #user foreign key의 github아이디를 prblem의 기준으로 정렬한것을 가져온 객체
-        mvp_users = ProblemStatus.objects.filter(
-            problem__week=week,
-            is_solved=True,
-            problem__week__study__id=study_id
-        ).values('user__github_id').annotate(
+        mvp_users = (
+            ProblemStatus.objects.filter(
+                problem__week=week,
+                is_solved=True,
+                problem__week__study__id=study_id
+            )
+            .values('user__github_id')
             #mvp_user는 user의 github_id로 분류해서 가져오는데 num_solved라는 count를 사용해서 이걸 역순으로 가장 많은 것을 가져온다
-            num_solved=Count('problem')
-        ).order_by('-num_solved')
+            .annotate(num_solved=Count('problem'))
+            .order_by('-num_solved')
+        )
 
         if mvp_users:
             # mvp_users는 objects로 만들어진 집합이므로 첫번째꺼의 num_solved를 뽑아준다
             max_solved_count = mvp_users.first()['num_solved']
-            mvp_users = mvp_users.filter(num_solved=max_solved_count).values_list(
-                'user__github_id', flat=True)
-            mvp_users = list(set(mvp_users))  # 중복된 github_id 제거
-            # mvp가 여러명일 수도 있으니 만들어준다
-            mvp = [github_id for github_id in mvp_users]
+            mvp_users = mvp_users.filter(num_solved=max_solved_count).values_list('user__github_id', flat=True)
+            mvp = list(set(mvp_users))
         else:
             mvp = None
         data['mvp'] = mvp
@@ -118,16 +124,16 @@ class UserStudyHomepageAPIView(APIView):
         data['total_solved_problems'] = solved_problems
 
         # 잔디 색상 기록
-        solved_counts = ProblemStatus.objects.filter(
-            problem__week__study=study,
-            is_solved=True
-        ).values('solved_at').annotate(problem_count=Count('problem')).order_by('solved_at')
-        jandi = {}
-        for entry in solved_counts:
-            # strftime은 시간을 나타내는 구조
-            solved_at = entry['solved_at'].strftime('%Y-%m-%d')
-            problem_count = entry['problem_count']
-            jandi[solved_at] = problem_count
+        solved_counts = (
+            ProblemStatus.objects.filter(
+                problem__week__study=study,
+                is_solved=True,
+            )
+            .values('solved_at')
+            .annotate(problem_count=Count('problem'))
+            .order_by('solved_at')
+        )
+        jandi = {entry['solved_at'].strftime('%Y-%m-%d'): entry['problem_count'] for entry in solved_counts}
         data['jandi'] = jandi
 
         # user별 스터디 목록
@@ -146,12 +152,7 @@ class DateRecordAPIView(APIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({
-                "message": "그런 스터디는 없소",
-                "study": StudyResponseSerializer(Study.objects.all(), many=True).data
-                }, 
-                status=404
-            )
+            return wrong_study_response()
 
         # 스터디 유저들의 problemstatus 불러오기
         problem_statuses = ProblemStatus.objects.filter(
@@ -198,7 +199,7 @@ class DateRecordAPIView(APIView):
                 "solvers": user_list
             })
 
-        return JsonResponse({"data": problem_data})
+        return Response(problem_data)
 
 
 class WeekRetrieveAPIView(generics.RetrieveAPIView):
@@ -219,7 +220,7 @@ class WeekRetrieveAPIView(generics.RetrieveAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({'message': '그런 스터디는 없소!'}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # 필터링 get_or_create는 return 값이 두개!
         week, created = Week.objects.get_or_create(
@@ -315,7 +316,7 @@ class ProblemCreateDestroyAPIView(generics.GenericAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # week 찾기
         try:
@@ -352,7 +353,7 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         try:
             study = Study.objects.get(id=study_id)
         except Study.DoesNotExist:
-            return Response({"message": "해당 스터디를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+            return wrong_study_response()
 
         # week 찾기
         try:
@@ -373,3 +374,120 @@ class ProblemStatusUpdateAPIView(generics.UpdateAPIView):
         problem_status.save()
         
         return Response({"message": "Commit반영함"}, status=status.HTTP_202_ACCEPTED)
+
+
+class StudyJoinAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+
+        try:
+            Notification.objects.get(
+                receiver=study.leader,
+                sender=request_user,
+                study=study,
+                title="합류 요청"
+            )
+            return Response({"message": "이미 보낸 요청입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except Notification.DoesNotExist:
+            pass
+
+        if request_user in study.members.all():
+            return Response({"message": "이미 합류해있는 멤버입니다."}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        else:
+            Notification.create_notification(request_user, study, "join")
+            return Response({"message": "합류 요청 완료"}, status=status.HTTP_201_CREATED)
+    
+
+class StudyJoinAcceptAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+
+        try:
+            joined_user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"{kwargs['backjoon_id']} 유저를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+
+        try:
+            join_request = Notification.objects.get(
+                sender=joined_user,
+                receiver=study.leader,
+                study=study,
+                notification_type='join'
+            )
+        except Notification.DoesNotExist:
+            Response({"message": "해당 요청을 찾을 수 없습니다."}, status=status.HTTP_204_NO_CONTENT)
+        
+        if join_request.is_read:
+            return Response({"message": "이미 처리된 요청입니다."}, status=status.HTTP_208_ALREADY_REPORTED)
+        join_request.is_read=True
+        join_request.save()
+
+        study.add_member(joined_user)
+        Notification.create_notification(
+            sender=request_user, 
+            study=study, 
+            notification_type="join_accepted", 
+            receivers=joined_user
+        )
+
+        return Response({"message": "합류 수락 완료"})
+
+
+class StudyJoinRejectAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        request_user = request.user
+
+        try:
+            joined_user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"{kwargs['backjoon_id']} 유저를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            study = Study.objects.get(id=kwargs['study_id'])
+        except Study.DoesNotExist:
+            return wrong_study_response()
+
+        try:
+            join_request = Notification.objects.get(
+                sender=joined_user,
+                receiver=study.leader,
+                study=study,
+                notification_type='join'
+            )
+        except Notification.DoesNotExist:
+            Response({"message": "해당 요청을 찾을 수 없습니다."}, status=status.HTTP_204_NO_CONTENT)
+        
+        if join_request.is_read:
+            return Response({"message": "이미 처리된 요청입니다."}, status=status.HTTP_208_ALREADY_REPORTED)
+        join_request.is_read=True
+        join_request.save()
+
+        Notification.create_notification(
+            sender=request_user, 
+            study=study, 
+            notification_type="join_rejected", 
+            receivers=joined_user
+        )
+
+        return Response({"message": "합류 거절 완료"})

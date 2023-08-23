@@ -1,18 +1,20 @@
+from datetime import datetime
 import requests
 
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import redirect
 
 from rest_framework import status
-from rest_framework.generics import RetrieveAPIView
+from rest_framework.generics import RetrieveAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from studies.models import Study, Week, Problem, ProblemStatus
-from .serializers import UserUpdateSerializer, UserDetailSerializer
-from .models import User, UserProblemSolved
+from .serializers import UserUpdateSerializer, NotificationSerializer, StudySerializer
+from .models import User, UserProblemSolved, Notification
 
 
 BASE_URL = settings.BASE_URL
@@ -26,7 +28,7 @@ def kakao_login(request):
 
 
 class KakaoSignUpView(APIView):
-    permission_classes = [AllowAny, ]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         headers = {
@@ -96,7 +98,7 @@ class KakaoSignUpView(APIView):
 
 
 class UserUpdateView(APIView):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
         serializer = UserUpdateSerializer(
@@ -113,43 +115,64 @@ class UserUpdateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserDetailView(RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserDetailSerializer
-    permission_classes = [IsAuthenticated, ]
+class StudyAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def retrieve(self, request, *args, **kwargs):
-        user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
-
-        # solved.ac api 통해 가져오고 없으면 "?" 반환
+    def get(self, request, *args, **kwargs):
+        data = {}
         try:
-            response = requests.get(
-                f"https://solved.ac/api/v3/user/show?handle={user.backjoon_id}")
-            response.raise_for_status()
-            data = response.json()
-            solved = data.get('solvedCount', '?')
-        except Exception:
-            solved = '?'
+            user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"유저 {kwargs['backjoon_id']}를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        request_user = request.user
 
-        instance = dict()
-        instance['id'] = user.id
-        instance['kakao_id'] = user.kakao_id
-        instance['backjoon_id'] = user.backjoon_id
-        instance['github_id'] = user.github_id
-        instance['company'] = user.company
-        instance['followers'] = user.followers.count()
-        instance['following'] = user.following.count()
-        instance['solved'] = solved
-        instance['is_follow'] = request.user.is_following(
-            kwargs['backjoon_id'])
-        instance['studies'] = user.get_studies()
+        study = Study.objects.filter(members=user)
+        serializer = StudySerializer(study, many=True, context={'request_user': request_user})
+        return Response(serializer.data)
 
-        serializer = self.get_serializer(instance)
+
+class NotificationAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            user = User.objects.get(backjoon_id=kwargs['backjoon_id'])
+        except User.DoesNotExist:
+            return Response(
+                {"message": f"유저 {kwargs['backjoon_id']}를 찾을 수 없습니다."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        request_user = request.user
+        if request_user != user:
+            return Response(
+                {"message": "본인의 알림만 볼 수 있습니다."}, 
+                status=status.HTTP_204_NO_CONTENT
+            )
+        
+        current_date = datetime.now().date()
+        combined_query = (
+            Q(notification_type="solved", study__weeks__start_date__lte=current_date) |
+            Q(notification_type="join") |
+            Q(notification_type="join_accepted") |
+            Q(notification_type="join_rejected")
+        )
+
+        queryset = Notification.objects.filter(
+            combined_query,
+            receiver=request_user,
+            is_read=False
+        ).order_by('created_at')
+
+        serializer = NotificationSerializer(queryset, many=True)       
         return Response(serializer.data)
 
 
 class FollowView(APIView):
-    permission_classes = [IsAuthenticated, ]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         user = kwargs["backjoon_id"]

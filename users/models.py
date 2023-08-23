@@ -8,7 +8,6 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from studies.models import Study, ProblemStatus
 
 
-
 class UserManager(BaseUserManager):
     def create_user(self, kakao_id, password=None, backjoon_id=None, github_id=None, **extra_fields):
         if not kakao_id:
@@ -42,8 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     github_id = models.CharField(max_length=255, null=True, blank=True)
     profile_image = models.URLField(blank=True, null=True, default="")
     company = models.CharField(max_length=255, blank=True, null=True)
-    following = models.ManyToManyField(
-        'self', symmetrical=False, related_name='followers')
+    following = models.ManyToManyField('self', symmetrical=False, related_name='followers')
     is_open = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -84,11 +82,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def get_rank(self):
         users = User.objects.filter(is_staff=False)
-        rank = dict()
+        scores = []
         for user in users:
-            rank[f"{user.backjoon_id}"] = user.problem_count()
-        rank = dict(sorted(rank.items(), key=lambda x: x[1], reverse=True))
-        return list(rank).index(self.backjoon_id) + 1
+            scores.append((user.backjoon_id, user.problem_count()))
+
+        # 문제 수로 정렬
+        sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+
+        # 등수 부여 (동점자 고려)
+        rank = 1
+        last_score = -1
+        ranks = {}
+        for user_id, score in sorted_scores:
+            if score != last_score:  # 이전 점수와 다르면 등수 증가
+                rank += len([x for x, y in ranks.items() if y == last_score])  # 이전 점수와 동일한 사람 수만큼 등수 증가
+                last_score = score
+            ranks[user_id] = rank
+
+        return ranks.get(self.backjoon_id, 0)
 
 
 class Notification(models.Model):
@@ -110,6 +121,7 @@ class Notification(models.Model):
     content = models.CharField(max_length=100, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    notification_type = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"[{self.study}] {self.title}"
@@ -117,21 +129,29 @@ class Notification(models.Model):
     @classmethod
     def create_notification(cls, sender, study, notification_type, **kwargs):
         if notification_type == 'solved':
-            receiver = study.members.all()
+            receivers = study.members.all()
             title = "풀이 완료"
             content = f"{sender}님이 문제를 풀었습니다!"
         elif notification_type == 'join':
-            receiver = [study.leader]
+            receivers = [study.leader]
             title = "합류 요청"
             content = f"{sender}님의 합류 요청이 있습니다!"
+        elif notification_type == 'join_accepted':
+            receivers = [kwargs['receivers']]
+            title = "합류 요청 수락"
+            content = f"{study.name}에 합류하셨습니다."
+        elif notification_type == 'join_rejected':
+            receivers = [kwargs['receivers']]
+            title = "합류 요청 거절"
+            content = f"{study.name} 합류 요청이 거절되었습니다."
         else:
             raise TypeError("올바른 notification_type 입력해주세요")
 
-        notification = cls(sender=sender, study=study,
-                           title=title, content=content)
+        notification = cls(sender=sender, study=study, title=title, content=content, notification_type=notification_type)
         notification.save()
-        notification.receiver.set(receiver)
+        notification.receiver.set(receivers)  # Use the set() method to update the receivers
         return notification
+
 
 
 class UserProblemSolved(models.Model):
