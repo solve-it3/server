@@ -108,8 +108,9 @@ class UserUpdateView(APIView):
             
             # UserProblemSolved 모델 생성
             ups, created = UserProblemSolved.objects.get_or_create(user=request.user)
-            if created:
-                ups.initialize()
+            # EC2로 배포한 후 주석 제거하기
+            # if created:
+                # ups.initialize()
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
